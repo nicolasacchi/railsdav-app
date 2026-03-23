@@ -90,10 +90,11 @@ module CardDav
 
         prop_filters = filter_el.xpath("card:prop-filter", ns).map do |pf|
           name = pf["name"]
+          is_not_defined = pf.at_xpath("card:is-not-defined", ns) ? true : false
           text_match_el = pf.at_xpath("card:text-match", ns)
           text_match = text_match_el&.text
           match_type = text_match_el&.[]("match-type") || "contains"
-          { name: name, text_match: text_match, match_type: match_type }
+          { name: name, text_match: text_match, match_type: match_type, is_not_defined: is_not_defined }
         end
 
         test = filter_el["test"] || "anyof"

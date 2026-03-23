@@ -1,3 +1,5 @@
+require "cgi"
+
 module CardDav
   class RequestContext
     attr_reader :env, :method, :path, :depth, :body, :content_type,
@@ -19,7 +21,7 @@ module CardDav
     def path_segments
       @path_segments ||= begin
         segments = path.sub(%r{^/dav/?}, "").split("/").reject(&:empty?)
-        segments
+        segments.map { |s| CGI.unescape(s) }
       end
     end
 

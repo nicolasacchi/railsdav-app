@@ -29,7 +29,7 @@ module CardDav
         contact = find_contact(addressbook, context)
         return not_found unless contact
 
-        if context.if_match && !context.if_match.include?(contact.etag)
+        if context.if_match && context.if_match != ["*"] && !context.if_match.include?(contact.etag)
           return precondition_failed
         end
 

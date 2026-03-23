@@ -130,22 +130,28 @@ module CardDav
         contacts = addressbook.contacts.to_a
 
         filter[:prop_filters].each do |pf|
-          next unless pf[:text_match]
-          contacts = contacts.select do |c|
-            prop_value = extract_vcard_prop(c.vcard_data, pf[:name])
-            next false unless prop_value
-            case pf[:match_type]
-            when "contains"
-              prop_value.downcase.include?(pf[:text_match].downcase)
-            when "starts-with"
-              prop_value.downcase.start_with?(pf[:text_match].downcase)
-            when "ends-with"
-              prop_value.downcase.end_with?(pf[:text_match].downcase)
-            when "equals"
-              prop_value.downcase == pf[:text_match].downcase
-            else
-              prop_value.downcase.include?(pf[:text_match].downcase)
+          if pf[:is_not_defined]
+            contacts = contacts.reject { |c| extract_vcard_prop(c.vcard_data, pf[:name]) }
+          elsif pf[:text_match]
+            contacts = contacts.select do |c|
+              prop_value = extract_vcard_prop(c.vcard_data, pf[:name])
+              next false unless prop_value
+              case pf[:match_type]
+              when "contains"
+                prop_value.downcase.include?(pf[:text_match].downcase)
+              when "starts-with"
+                prop_value.downcase.start_with?(pf[:text_match].downcase)
+              when "ends-with"
+                prop_value.downcase.end_with?(pf[:text_match].downcase)
+              when "equals"
+                prop_value.downcase == pf[:text_match].downcase
+              else
+                prop_value.downcase.include?(pf[:text_match].downcase)
+              end
             end
+          else
+            # prop-filter without text-match or is-not-defined = property must exist
+            contacts = contacts.select { |c| extract_vcard_prop(c.vcard_data, pf[:name]) }
           end
         end
 

@@ -13,6 +13,10 @@ module CardDav
         return bad_request("Request body required") unless context.body
         return text_response(413, "Request body too large") if context.body.bytesize > 1_048_576
 
+        if context.content_type && !context.content_type.match?(%r{text/vcard|text/x-vcard}i)
+          return text_response(415, "Unsupported Media Type: expected text/vcard")
+        end
+
         unless context.resource_type == :contact
           return text_response(409, "Conflict: cannot PUT to a collection")
         end
@@ -63,6 +67,11 @@ module CardDav
       def create_contact(context, addressbook, vcard_data)
         if context.if_match
           return precondition_failed
+        end
+
+        uid = extract_uid(vcard_data)
+        if uid && addressbook.contacts.exists?(uid: uid)
+          return text_response(409, "Conflict: a contact with this UID already exists in this addressbook")
         end
 
         contact = nil

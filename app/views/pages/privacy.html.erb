@@ -1,0 +1,75 @@
+<section class="page-hero">
+  <div class="container">
+    <h1>Privacy Policy</h1>
+  </div>
+</section>
+
+<div class="legal-content">
+  <p class="last-updated">Last updated: March 15, 2026</p>
+
+  <p>This policy describes how Contacts (<%= Railsdav.site_url %>) collects, uses, and protects your information.</p>
+
+  <h2>1. Data We Collect</h2>
+  <p>We collect only what is necessary to provide the service:</p>
+  <ul>
+    <li><strong>Account information:</strong> username, email address (optional), and a securely hashed password.</li>
+    <li><strong>Contact data:</strong> vCard records you create, import, or sync to the service.</li>
+    <li><strong>Billing information:</strong> processed and stored by <a href="https://stripe.com/privacy" target="_blank" rel="noopener">Stripe</a>. We do not store your credit card number.</li>
+    <li><strong>Server logs:</strong> IP address, request timestamps, and user agent strings. Logs are retained for a limited period for security and debugging purposes.</li>
+  </ul>
+
+  <h2>2. Data We Do NOT Collect</h2>
+  <ul>
+    <li>No analytics or tracking scripts.</li>
+    <li>No device fingerprinting.</li>
+    <li>No advertising identifiers.</li>
+    <li>No third-party cookies or tracking pixels.</li>
+    <li>No usage telemetry.</li>
+  </ul>
+
+  <h2>3. How We Use Your Data</h2>
+  <ul>
+    <li>To authenticate you and provide CardDAV sync.</li>
+    <li>To process subscription payments via Stripe.</li>
+    <li>To send essential service communications (if email is provided).</li>
+  </ul>
+  <p>We will never sell, rent, or share your personal data with third parties for marketing purposes.</p>
+
+  <h2>4. Third-Party Services</h2>
+  <p>The only third-party service that receives your data is:</p>
+  <ul>
+    <li><strong>Stripe</strong> &mdash; for payment processing. Stripe receives your email and payment details. See <a href="https://stripe.com/privacy" target="_blank" rel="noopener">Stripe's Privacy Policy</a>.</li>
+  </ul>
+
+  <h2>5. Cookies</h2>
+  <p>We use a single session cookie to keep you logged in. No tracking or analytics cookies are used. See our <%= link_to "Cookie Policy", cookies_path %> for details.</p>
+
+  <h2>6. Data Security</h2>
+  <ul>
+    <li>Passwords are hashed with bcrypt (never stored in plain text).</li>
+    <li>All connections are encrypted via HTTPS/TLS.</li>
+    <li>CardDAV authentication uses HTTP Basic Auth over TLS.</li>
+  </ul>
+
+  <h2>7. Data Retention</h2>
+  <ul>
+    <li>Your data is retained as long as your account is active.</li>
+    <li>You can delete individual contacts, entire addressbooks, or export all your data at any time.</li>
+    <li>If you wish to have your account and all associated data deleted, contact us.</li>
+  </ul>
+
+  <h2>8. Your Rights</h2>
+  <p>You have the right to:</p>
+  <ul>
+    <li><strong>Access</strong> your data &mdash; all contacts are visible in the web UI and via CardDAV sync.</li>
+    <li><strong>Export</strong> your data &mdash; in vCard (.vcf), CSV, or JSON format.</li>
+    <li><strong>Delete</strong> your data &mdash; remove contacts and addressbooks through the web UI.</li>
+    <li><strong>Rectify</strong> your data &mdash; edit any contact directly.</li>
+  </ul>
+
+  <h2>9. Changes to This Policy</h2>
+  <p>We may update this policy from time to time. Changes will be posted on this page with an updated date.</p>
+
+  <h2>10. Contact</h2>
+  <p>For privacy-related questions, contact us at <strong>support@scc.im</strong>.</p>
+</div>

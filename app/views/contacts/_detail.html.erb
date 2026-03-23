@@ -1,0 +1,162 @@
+<div class="detail-header">
+  <h2>
+    <%= display&.full_name || contact.uri %>
+    <% if display&.full_name.present? %>
+      <button class="copy-btn" data-copy="<%= display.full_name %>" title="Copy name">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
+    <% end %>
+  </h2>
+  <p class="contact-meta"><%= link_to addressbook.displayname, addressbook_path(addressbook.uri) %><% if addressbook.user_id != current_user.id %> (from <%= addressbook.user.username %>)<% end %></p>
+  <div class="actions">
+    <%= link_to edit_addressbook_contact_path(addressbook.uri, contact.uri), class: "btn btn-sm", data: { panel_link: true } do %><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit<% end %>
+    <%= link_to export_addressbook_contact_path(addressbook.uri, contact.uri, export_format: "vcf"), class: "btn btn-sm" do %><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> vCard<% end %>
+    <%= link_to export_addressbook_contact_path(addressbook.uri, contact.uri, export_format: "csv"), class: "btn btn-sm" do %><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> CSV<% end %>
+    <%= link_to export_addressbook_contact_path(addressbook.uri, contact.uri, export_format: "json"), class: "btn btn-sm" do %><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> JSON<% end %>
+    <%= button_to addressbook_contact_path(addressbook.uri, contact.uri), method: :delete,
+        class: "btn btn-sm btn-danger", form: { data: { turbo: false } },
+        data: { confirm: "Delete this contact?" } do %><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Delete<% end %>
+  </div>
+</div>
+
+<% if display %>
+  <% if display.emails.any? %>
+    <div class="detail-section">
+      <h3>Email</h3>
+      <% display.emails.each do |e| %>
+        <div class="detail-value">
+          <span><%= e[:value] %><% if e[:type] %> <span class="contact-meta">(<%= e[:type] %>)</span><% end %></span>
+          <button class="copy-btn" data-copy="<%= e[:value] %>" title="Copy email">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+          <a href="mailto:<%= e[:value] %>" class="action-link" title="Send email">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </a>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% if display.phones.any? %>
+    <div class="detail-section">
+      <h3>Phone</h3>
+      <% display.phones.each do |p| %>
+        <div class="detail-value">
+          <span><%= p[:value] %><% if p[:type] %> <span class="contact-meta">(<%= p[:type] %>)</span><% end %></span>
+          <button class="copy-btn" data-copy="<%= p[:value] %>" title="Copy phone">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+          <a href="tel:<%= p[:value] %>" class="action-link" title="Call">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          </a>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% if display.organization.present? %>
+    <div class="detail-section">
+      <h3>Organization</h3>
+      <% org_text = display.organization + (display.title.present? ? " - #{display.title}" : "") %>
+      <div class="detail-value">
+        <span><%= org_text %></span>
+        <button class="copy-btn" data-copy="<%= org_text %>" title="Copy organization">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polyline points="20 6 9 17 4 12"/></svg>
+        </button>
+      </div>
+    </div>
+  <% end %>
+
+  <% if display.categories.any? %>
+    <div class="detail-section">
+      <h3>Groups</h3>
+      <div class="detail-value" style="flex-wrap: wrap;">
+        <% display.categories.each do |cat| %>
+          <span class="group-badge"><%= cat %></span>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <% if display.addresses.any? %>
+    <div class="detail-section">
+      <h3>Address</h3>
+      <% display.addresses.each do |a| %>
+        <% addr_text = [a[:street], a[:city], a[:state], a[:zip], a[:country]].compact.reject(&:empty?).join(", ") %>
+        <div class="detail-value">
+          <span><%= addr_text %></span>
+          <button class="copy-btn" data-copy="<%= addr_text %>" title="Copy address">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% if display.urls.any? %>
+    <div class="detail-section">
+      <h3>Websites</h3>
+      <% display.urls.each do |u| %>
+        <div class="detail-value">
+          <% href = u[:value].start_with?("http") ? u[:value] : "https://#{u[:value]}" %>
+          <a href="<%= href %>" target="_blank" rel="noopener"><%= u[:value] %></a>
+          <button class="copy-btn" data-copy="<%= u[:value] %>" title="Copy URL">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <%
+    dates_list = []
+    dates_list << { label: "Birthday", value: display.birthday } if display.birthday.present?
+    dates_list << { label: "Anniversary", value: display.anniversary } if display.anniversary.present?
+    display.dates.each { |d| dates_list << { label: d[:type] || "Date", value: d[:value] } }
+  %>
+  <% if dates_list.any? %>
+    <div class="detail-section">
+      <h3>Dates</h3>
+      <% dates_list.each do |d| %>
+        <div class="detail-value">
+          <span><%= d[:value] %> <span class="contact-meta">(<%= d[:label] %>)</span></span>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% if display.related.any? %>
+    <div class="detail-section">
+      <h3>Relationships</h3>
+      <% display.related.each do |r| %>
+        <div class="detail-value">
+          <span><%= r[:value] %><% if r[:type] %> <span class="contact-meta">(<%= r[:type].tr("-", " ") %>)</span><% end %></span>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% if display.note.present? %>
+    <div class="detail-section">
+      <h3>Notes</h3>
+      <div class="detail-value">
+        <span><%= display.note %></span>
+        <button class="copy-btn" data-copy="<%= display.note %>" title="Copy note">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polyline points="20 6 9 17 4 12"/></svg>
+        </button>
+      </div>
+    </div>
+  <% end %>
+<% end %>
+
+<details style="margin-top: 1rem;">
+  <summary class="btn btn-sm">Raw vCard</summary>
+  <pre class="raw-vcard"><%= contact.vcard_data %></pre>
+</details>

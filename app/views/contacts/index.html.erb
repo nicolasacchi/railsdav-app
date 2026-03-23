@@ -1,0 +1,273 @@
+<div class="contacts-layout">
+  <div class="contacts-sidebar">
+    <div class="contacts-sidebar-header">
+      <div class="all-contacts-header">
+        <h1>Contacts <span class="contact-count">(<%= @contact_count %><%= " — page #{@pagy.page}/#{@pagy.pages}" if @pagy.pages > 1 %>)</span></h1>
+        <% if @writable_addressbooks.size == 1 %>
+          <a href="<%= new_addressbook_contact_path(@writable_addressbooks.first.uri) %>" class="btn btn-primary btn-sm" data-panel-link>+ New</a>
+        <% elsif @writable_addressbooks.size > 1 %>
+          <details class="new-contact-dropdown">
+            <summary class="btn btn-primary btn-sm">+ New</summary>
+            <ul class="dropdown-menu">
+              <% @writable_addressbooks.each do |ab| %>
+                <li><a href="<%= new_addressbook_contact_path(ab.uri) %>" data-panel-link><%= ab.displayname %></a></li>
+              <% end %>
+            </ul>
+          </details>
+        <% end %>
+      </div>
+
+      <div class="contacts-toolbar">
+        <div class="search-wrapper">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" class="search-input" id="contact-search"
+                 placeholder="Search contacts..." autocomplete="off">
+        </div>
+        <% if @addressbooks_for_filter.size > 1 %>
+          <select id="addressbook-filter" onchange="if(this.value){window.location.href='?addressbook_id='+this.value}else{window.location.href=window.location.pathname}">
+            <option value="">All addressbooks</option>
+            <% @addressbooks_for_filter.each do |ab| %>
+              <% label = ab.user_id == current_user.id ? ab.displayname : "#{ab.displayname} (#{ab.user.username})" %>
+              <option value="<%= ab.id %>" <%= 'selected' if @selected_addressbook_id == ab.id %>>
+                <%= label %>
+              </option>
+            <% end %>
+          </select>
+        <% end %>
+      </div>
+
+      <% if @groups.any? %>
+        <div class="group-filter">
+          <a href="<%= request.path %>?<%= { addressbook_id: @selected_addressbook_id }.compact.to_query %>" class="group-tag <%= 'active' unless @selected_group_id && @selected_group_id > 0 %>">All</a>
+          <% @groups.each do |group| %>
+            <a href="<%= request.path %>?<%= { group_id: group.id, addressbook_id: @selected_addressbook_id }.compact.to_query %>" class="group-tag <%= 'active' if @selected_group_id == group.id %>">
+              <%= group.name %> <span class="group-count">(<%= group.contacts.individuals.count %>)</span>
+            </a>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="contacts-scroll">
+      <% if @parsed_contacts.empty? %>
+        <div class="empty-state">
+          <p>No contacts yet.</p>
+          <% if @writable_addressbooks.any? %>
+            <p>Click "+ New" to add your first contact.</p>
+          <% end %>
+        </div>
+      <% else %>
+        <% @grouped_contacts.sort.each do |letter, items| %>
+          <div class="letter-heading" id="letter-<%= letter %>"><%= letter %></div>
+          <ul class="contact-list">
+            <% items.each do |item| %>
+              <% search_text = [item[:display]&.full_name, item[:display]&.emails&.map { |e| e[:value] }, item[:display]&.phones&.map { |p| p[:value] }, item[:addressbook].displayname, item[:display]&.categories].flatten.compact.join(' ').downcase %>
+              <li class="contact-item" data-search="<%= search_text %>" data-href="<%= addressbook_contact_path(item[:addressbook].uri, item[:contact].uri) %>">
+                <div>
+                  <div class="contact-name">
+                    <a href="<%= addressbook_contact_path(item[:addressbook].uri, item[:contact].uri) %>" data-panel-link>
+                      <%= item[:display]&.full_name || item[:contact].uri %>
+                    </a>
+                    <span class="contact-addressbook-badge"><%= item[:addressbook].displayname %><% if item[:addressbook].user_id != current_user.id %> (<%= item[:addressbook].user.username %>)<% end %></span>
+                  </div>
+                  <% if item[:display]&.emails&.any? %>
+                    <div class="contact-meta"><%= item[:display].emails.first[:value] %></div>
+                  <% end %>
+                </div>
+                <% if item[:display]&.phones&.any? %>
+                  <span class="contact-meta"><%= item[:display].phones.first[:value] %></span>
+                <% end %>
+              </li>
+            <% end %>
+          </ul>
+        <% end %>
+      <% end %>
+
+      <% if @pagy.pages > 1 %>
+        <div class="pagination">
+          <% if @pagy.previous %>
+            <a href="<%= request.path %>?<%= { page: @pagy.previous, addressbook_id: @selected_addressbook_id, group_id: @selected_group_id }.compact.to_query %>" class="btn btn-sm">&laquo; Prev</a>
+          <% else %>
+            <span class="btn btn-sm disabled">&laquo; Prev</span>
+          <% end %>
+          <span class="pagination-info">Page <%= @pagy.page %> of <%= @pagy.pages %></span>
+          <% if @pagy.next %>
+            <a href="<%= request.path %>?<%= { page: @pagy.next, addressbook_id: @selected_addressbook_id, group_id: @selected_group_id }.compact.to_query %>" class="btn btn-sm">Next &raquo;</a>
+          <% else %>
+            <span class="btn btn-sm disabled">Next &raquo;</span>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+
+    <% if @parsed_contacts.any? && @pagy.pages <= 1 %>
+      <div class="alphabet-bar">
+        <% ('A'..'Z').each do |letter| %>
+          <% if @grouped_contacts.key?(letter) %>
+            <a href="#letter-<%= letter %>"><%= letter %></a>
+          <% else %>
+            <a class="disabled"><%= letter %></a>
+          <% end %>
+        <% end %>
+        <% if @grouped_contacts.key?("#") %>
+          <a href="#letter-">#</a>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="contacts-detail" id="contact-detail-panel">
+    <div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width: 48px; height: 48px; color: var(--border);">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="12" cy="7" r="4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <p>Select a contact to view details</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var panel = document.getElementById("contact-detail-panel");
+  var sidebar = document.querySelector(".contacts-sidebar");
+  var currentHref = null;
+
+  function loadInPanel(href) {
+    if (window.innerWidth < 768) {
+      window.location.href = href;
+      return;
+    }
+    currentHref = href;
+    panel.textContent = "";
+    var loading = document.createElement("div");
+    loading.className = "empty-state";
+    loading.appendChild(document.createTextNode("Loading..."));
+    panel.appendChild(loading);
+
+    fetch(href, { headers: { "X-Requested-With": "XMLHttpRequest" }, redirect: "follow" })
+      .then(function(r) { return r.text(); })
+      .then(function(html) {
+        var doc = new DOMParser().parseFromString(html, "text/html");
+        var frame = doc.querySelector("turbo-frame#contact-detail");
+        var source = frame || doc.querySelector(".container");
+        panel.textContent = "";
+        if (source) {
+          while (source.firstChild) {
+            panel.appendChild(source.firstChild);
+          }
+        }
+        history.pushState(null, "", "/contacts#" + href);
+        highlightActive();
+      })
+      .catch(function(err) {
+        console.error("Panel load failed:", err);
+        panel.textContent = "";
+        var errDiv = document.createElement("div");
+        errDiv.className = "empty-state";
+        errDiv.appendChild(document.createTextNode("Failed to load contact."));
+        panel.appendChild(errDiv);
+      });
+  }
+
+  function highlightActive() {
+    sidebar.querySelectorAll(".contact-item").forEach(function(el) {
+      var href = el.getAttribute("data-href") || "";
+      el.classList.toggle("active", href && currentHref && currentHref.indexOf(href) !== -1);
+    });
+  }
+
+  function showEmptyState() {
+    panel.textContent = "";
+    var div = document.createElement("div");
+    div.className = "empty-state";
+    var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("stroke", "currentColor");
+    svg.setAttribute("stroke-width", "1.5");
+    svg.style.cssText = "width:48px;height:48px;color:var(--border)";
+    var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2");
+    path.setAttribute("stroke-linecap", "round");
+    path.setAttribute("stroke-linejoin", "round");
+    svg.appendChild(path);
+    var circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    circle.setAttribute("cx", "12");
+    circle.setAttribute("cy", "7");
+    circle.setAttribute("r", "4");
+    circle.setAttribute("stroke-linecap", "round");
+    circle.setAttribute("stroke-linejoin", "round");
+    svg.appendChild(circle);
+    div.appendChild(svg);
+    var p = document.createElement("p");
+    p.textContent = "Select a contact to view details";
+    div.appendChild(p);
+    panel.appendChild(div);
+  }
+
+  // Event delegation: sidebar clicks (contact rows + panel links)
+  sidebar.addEventListener("click", function(e) {
+    var link = e.target.closest("[data-panel-link]");
+    if (link && link.href) {
+      e.preventDefault();
+      loadInPanel(link.href);
+      return;
+    }
+    var item = e.target.closest(".contact-item");
+    if (item) {
+      var href = item.getAttribute("data-href");
+      if (href) {
+        e.preventDefault();
+        loadInPanel(href);
+      }
+    }
+  });
+
+  // Event delegation: panel clicks (Edit, Cancel, etc.)
+  panel.addEventListener("click", function(e) {
+    var link = e.target.closest("[data-panel-link]");
+    if (link && link.href) {
+      e.preventDefault();
+      loadInPanel(link.href);
+    }
+  });
+
+  window.addEventListener("popstate", function() {
+    var hash = window.location.hash.replace(/^#/, "");
+    if (hash && hash.indexOf("/addressbooks/") !== -1) {
+      loadInPanel(hash);
+    } else {
+      showEmptyState();
+      currentHref = null;
+      highlightActive();
+    }
+  });
+
+  // On page load, restore contact from hash fragment
+  (function() {
+    var hash = window.location.hash.replace(/^#/, "");
+    if (hash && hash.indexOf("/addressbooks/") !== -1) {
+      loadInPanel(hash);
+    }
+  })();
+
+  // Client-side search
+  var search = document.getElementById("contact-search");
+  if (search) {
+    search.addEventListener("input", function() {
+      var q = this.value.toLowerCase();
+      sidebar.querySelectorAll(".contact-item").forEach(function(el) {
+        var text = el.getAttribute("data-search") || "";
+        el.style.display = (!q || text.includes(q)) ? "" : "none";
+      });
+      sidebar.querySelectorAll(".letter-heading").forEach(function(h) {
+        var list = h.nextElementSibling;
+        if (!list) { h.style.display = "none"; return; }
+        var visible = list.querySelectorAll(".contact-item:not([style*='display: none'])");
+        h.style.display = visible.length > 0 ? "" : "none";
+      });
+    });
+  }
+})();
+</script>

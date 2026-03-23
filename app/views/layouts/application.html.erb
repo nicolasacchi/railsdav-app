@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= content_for(:title) || "Contacts" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="application-name" content="Contacts">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <%= yield :head %>
+    <link rel="icon" href="/icon.png" type="image/png">
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+  </head>
+
+  <body class="<%= 'public-page' unless current_user %>">
+    <nav class="navbar">
+      <div class="container navbar-inner">
+        <a href="<%= root_path %>" class="brand"><img src="/icon.svg" alt="" width="24" height="24" class="brand-logo">Contacts</a>
+        <button class="nav-toggle" aria-label="Menu" onclick="this.closest('.navbar-inner').classList.toggle('nav-open')">
+          <span></span><span></span><span></span>
+        </button>
+        <% if current_user %>
+          <div class="nav-links">
+            <%= link_to "Contacts", all_contacts_path, class: "nav-link" %>
+            <%= link_to "Addressbooks", addressbooks_path, class: "nav-link" %>
+            <% if current_user.admin? %>
+              <%= link_to "Admin", admin_root_path, class: "nav-link" %>
+            <% end %>
+          </div>
+          <span class="nav-user"><%= current_user.username %></span>
+          <%= button_to "Logout", logout_path, method: :delete, class: "btn btn-sm" %>
+        <% else %>
+          <div class="nav-actions">
+            <%= link_to "Log In", login_path, class: "btn btn-sm" %>
+            <%= link_to "Sign Up", register_path, class: "btn btn-sm btn-primary" %>
+          </div>
+        <% end %>
+      </div>
+    </nav>
+
+    <main>
+      <% if flash[:notice] %>
+        <div class="container">
+          <div class="flash flash-notice"><%= flash[:notice] %></div>
+        </div>
+      <% end %>
+      <% if flash[:alert] %>
+        <div class="container">
+          <div class="flash flash-alert"><%= flash[:alert] %></div>
+        </div>
+      <% end %>
+
+      <%= yield %>
+    </main>
+
+    <% unless current_user %>
+      <footer class="site-footer">
+        <div class="container">
+          <p>Contacts &mdash; Self-hosted CardDAV for people who own their data.</p>
+          <p class="footer-links">
+            <%= link_to "Terms", terms_path %> &middot;
+            <%= link_to "Privacy", privacy_path %> &middot;
+            <%= link_to "Cookies", cookies_path %>
+          </p>
+        </div>
+      </footer>
+    <% end %>
+    <script>
+      document.addEventListener("click", function(e) {
+        var btn = e.target.closest(".copy-btn");
+        if (!btn) return;
+        var text = btn.getAttribute("data-copy");
+        if (!text) return;
+        navigator.clipboard.writeText(text).then(function() {
+          btn.classList.add("copied");
+          var icons = btn.querySelectorAll("svg");
+          if (icons.length === 2) { icons[0].style.display = "none"; icons[1].style.display = ""; }
+          setTimeout(function() {
+            btn.classList.remove("copied");
+            if (icons.length === 2) { icons[0].style.display = ""; icons[1].style.display = "none"; }
+          }, 1500);
+        });
+      });
+    </script>
+  </body>
+</html>

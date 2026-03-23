@@ -1,0 +1,35 @@
+#!/bin/bash -e
+
+# If running the rails server then create or migrate existing database
+if [ "$1" == "./bin/rails" ] && [ "$2" == "server" ]; then
+  ./bin/rails db:prepare
+
+  # Create Solid Queue tables in queue database if missing
+  QUEUE_DB="storage/production_queue.sqlite3"
+  if [ -f "$QUEUE_DB" ]; then
+    TABLE_COUNT=$(sqlite3 "$QUEUE_DB" "SELECT count(*) FROM sqlite_master WHERE type='table' AND name LIKE 'solid_queue_%';")
+    if [ "$TABLE_COUNT" -eq 0 ]; then
+      echo "Creating Solid Queue tables..."
+      ./bin/rails runner '
+        config = ActiveRecord::Base.configurations.configs_for(env_name: Rails.env, name: "queue")
+        pool = ActiveRecord::Base.connection_handler.establish_connection(config)
+        conn = pool.connection
+        schema = File.read(Rails.root.join("db/queue_schema.rb"))
+        # Extract and execute table creation statements
+        conn.migration_context # ensure migration table exists
+        ActiveRecord::Migration.suppress_messages do
+          # Use Schema.define block in context of queue connection
+          original_conn = ActiveRecord::Base.connection
+          ActiveRecord::Base.connection_handler.establish_connection(config)
+          load Rails.root.join("db/queue_schema.rb").to_s
+          ActiveRecord::Base.establish_connection(:primary)
+        end
+        puts "Solid Queue tables created."
+      ' || true
+    fi
+  fi
+
+  ./bin/rails db:seed
+fi
+
+exec "${@}"

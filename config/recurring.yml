@@ -1,0 +1,5 @@
+# Solid Queue recurring tasks
+# Add scheduled jobs here, e.g.:
+# trial_ending_reminder:
+#   class: TrialEndingReminderJob
+#   schedule: every day at 9am

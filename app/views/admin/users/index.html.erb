@@ -1,0 +1,61 @@
+<%= render "admin/nav" %>
+
+<div class="container">
+  <div class="page-header">
+    <h1>Users</h1>
+  </div>
+
+  <div class="card" style="margin-bottom: 1.5rem;">
+    <%= form_tag admin_users_path, method: :get, local: true, style: "display: flex; gap: 0.5rem;" do %>
+      <input type="text" name="q" value="<%= params[:q] %>" placeholder="Search by username or email..." class="search-input" style="flex: 1;">
+      <button type="submit" class="btn btn-primary btn-sm">Search</button>
+      <% if params[:q].present? %>
+        <%= link_to "Clear", admin_users_path, class: "btn btn-sm" %>
+      <% end %>
+    <% end %>
+  </div>
+
+  <div class="card">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Admin</th>
+          <th>Joined</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @users.each do |user| %>
+          <tr>
+            <td><%= user.username %></td>
+            <td><%= user.email || "-" %></td>
+            <td>
+              <% if user.admin? %>
+                <span class="status-badge status-active">Admin</span>
+              <% end %>
+            </td>
+            <td><%= user.created_at.strftime("%b %d, %Y") %></td>
+            <td class="admin-actions">
+              <%= link_to "View", admin_user_path(user), class: "btn btn-sm" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+
+    <% total_pages = (@total.to_f / 25).ceil %>
+    <% if total_pages > 1 %>
+      <div class="admin-pagination">
+        <% if @page > 1 %>
+          <%= link_to "Previous", admin_users_path(page: @page - 1, q: params[:q]), class: "btn btn-sm" %>
+        <% end %>
+        <span>Page <%= @page %> of <%= total_pages %></span>
+        <% if @page < total_pages %>
+          <%= link_to "Next", admin_users_path(page: @page + 1, q: params[:q]), class: "btn btn-sm" %>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>

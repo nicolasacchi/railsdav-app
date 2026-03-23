@@ -1,0 +1,6 @@
+<nav class="admin-nav">
+  <div class="container">
+    <%= link_to "Dashboard", admin_root_path, class: "admin-nav-link #{'active' if controller_name == 'dashboard'}" %>
+    <%= link_to "Users", admin_users_path, class: "admin-nav-link #{'active' if controller_name == 'users'}" %>
+  </div>
+</nav>

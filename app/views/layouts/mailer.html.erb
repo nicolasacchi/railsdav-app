@@ -1,0 +1,60 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title><%= Railsdav.site_name %></title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f8f9fa; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f9fa;">
+    <tr>
+      <td align="center" style="padding: 40px 16px;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; width: 100%;">
+
+          <%# Header %>
+          <tr>
+            <td align="center" style="padding-bottom: 32px;">
+              <table role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="font-size: 22px; font-weight: 800; color: #212529; letter-spacing: -0.02em;">
+                    <span style="display: inline-block; width: 28px; height: 28px; background-color: #0d6efd; border-radius: 6px; color: #ffffff; font-size: 14px; font-weight: 700; text-align: center; line-height: 28px; vertical-align: middle; margin-right: 6px;">C</span><%= Railsdav.site_name %>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <%# Body card %>
+          <tr>
+            <td style="background-color: #ffffff; border: 1px solid #dee2e6; border-radius: 16px; padding: 40px 36px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="color: #212529; font-size: 16px; line-height: 1.6;">
+                    <%= yield %>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <%# Footer %>
+          <tr>
+            <td align="center" style="padding-top: 32px;">
+              <table role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="color: #6c757d; font-size: 13px; line-height: 1.6;">
+                    <p style="margin: 0 0 4px;"><%= Railsdav.site_name %> &mdash; Your contacts, your server.</p>
+                    <% if Railsdav.site_url.present? %>
+                      <p style="margin: 0;"><a href="<%= Railsdav.site_url %>" style="color: #6c757d; text-decoration: underline;"><%= Railsdav.site_url.to_s.sub(/\Ahttps?:\/\//, '') %></a></p>
+                    <% end %>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

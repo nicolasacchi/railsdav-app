@@ -1,0 +1,14 @@
+<div class="auth-form">
+  <h1>Forgot Password</h1>
+  <p class="auth-subtitle">Enter your email and we'll send you a reset link.</p>
+
+  <%= form_with url: forgot_password_path, method: :post, local: true, class: "form" do |f| %>
+    <div class="form-group">
+      <%= f.label :email %>
+      <%= f.email_field :email, autofocus: true, autocomplete: "email", placeholder: "you@example.com" %>
+    </div>
+    <%= f.submit "Send Reset Link", class: "btn btn-primary btn-block" %>
+  <% end %>
+
+  <p class="auth-footer">Remember your password? <%= link_to "Log in", login_path %></p>
+</div>

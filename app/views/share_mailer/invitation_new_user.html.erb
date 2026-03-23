@@ -1,0 +1,13 @@
+<p style="margin: 0 0 16px;">Hi,</p>
+
+<p style="margin: 0 0 16px;"><strong><%= @owner.username %></strong> invited you to <strong><%= Railsdav.site_name %></strong> and shared the address book <strong><%= @addressbook.displayname %></strong> with you.</p>
+
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin: 24px 0;">
+  <tr>
+    <td align="center" style="background-color: #0d6efd; border-radius: 8px;">
+      <a href="<%= @register_url %>" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">Create Your Account</a>
+    </td>
+  </tr>
+</table>
+
+<p style="margin: 0; color: #6c757d; font-size: 14px;">If you weren't expecting this, you can ignore this email.</p>

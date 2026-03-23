@@ -1,0 +1,29 @@
+<div class="container">
+<div class="page-header">
+  <h1>Edit: <%= @addressbook.displayname %></h1>
+</div>
+
+<div class="card">
+  <%= form_with model: @addressbook, url: addressbook_path(@addressbook.uri), method: :patch, local: true do |f| %>
+    <div class="form-group">
+      <%= f.label :displayname, "Display Name" %>
+      <%= f.text_field :displayname %>
+    </div>
+    <div class="form-group">
+      <%= f.label :description %>
+      <%= f.text_field :description %>
+    </div>
+    <div class="actions">
+      <%= f.submit "Update", class: "btn btn-primary" %>
+      <%= link_to "Cancel", addressbook_path(@addressbook.uri), class: "btn" %>
+    </div>
+  <% end %>
+</div>
+
+<div class="card" style="margin-top: 1rem;">
+  <h2>Delete Addressbook</h2>
+  <p>This will permanently delete this addressbook and all its contacts.</p>
+  <%= button_to "Delete Addressbook", addressbook_path(@addressbook.uri), method: :delete,
+      class: "btn btn-danger", data: { turbo_confirm: "Are you sure?" } %>
+</div>
+</div>

@@ -1,0 +1,31 @@
+<div class="container">
+  <div class="page-header">
+    <h1><%= @addressbook.displayname %></h1>
+  </div>
+  <p style="color: var(--muted); margin-bottom: 1.5rem;">
+    Shared by <strong><%= @addressbook.user.username %></strong> &mdash; <%= @contacts.size %> contacts
+  </p>
+
+  <div class="card">
+    <% if @contacts.empty? %>
+      <p>No contacts in this addressbook.</p>
+    <% else %>
+      <ul class="contact-list">
+        <% @contacts.each_with_index do |contact, i| %>
+          <% display = @displays[i] %>
+          <li class="contact-item">
+            <div>
+              <div class="contact-name"><%= display&.full_name || contact.uri %></div>
+              <% if display&.emails&.any? %>
+                <div class="contact-meta"><%= display.emails.first[:value] %></div>
+              <% end %>
+            </div>
+            <% if display&.phones&.any? %>
+              <span class="contact-meta"><%= display.phones.first[:value] %></span>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+  </div>
+</div>

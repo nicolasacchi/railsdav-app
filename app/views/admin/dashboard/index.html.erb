@@ -1,0 +1,62 @@
+<%= render "admin/nav" %>
+
+<div class="container">
+  <div class="page-header">
+    <h1>Admin Dashboard</h1>
+  </div>
+
+  <div class="admin-stats">
+    <div class="admin-stat-card">
+      <div class="admin-stat-number"><%= @total_users %></div>
+      <div class="admin-stat-label">Total Users</div>
+    </div>
+    <div class="admin-stat-card">
+      <div class="admin-stat-number"><%= @total_contacts %></div>
+      <div class="admin-stat-label">Total Contacts</div>
+    </div>
+    <div class="admin-stat-card">
+      <div class="admin-stat-number"><%= @total_addressbooks %></div>
+      <div class="admin-stat-label">Total Addressbooks</div>
+    </div>
+    <div class="admin-stat-card">
+      <div class="admin-stat-number"><%= @recent_signups %></div>
+      <div class="admin-stat-label">Signups (7d)</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <h2 style="margin: 0;">Recent Users</h2>
+      <%= link_to "View All Users", admin_users_path, class: "btn btn-sm btn-primary" %>
+    </div>
+
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Admin</th>
+          <th>Joined</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @recent_users.each do |user| %>
+          <tr>
+            <td><%= user.username %></td>
+            <td><%= user.email || "-" %></td>
+            <td>
+              <% if user.admin? %>
+                <span class="status-badge status-active">Admin</span>
+              <% end %>
+            </td>
+            <td><%= user.created_at.strftime("%b %d, %Y") %></td>
+            <td class="admin-actions">
+              <%= link_to "View", admin_user_path(user), class: "btn btn-sm" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

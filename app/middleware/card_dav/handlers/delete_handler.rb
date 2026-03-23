@@ -1,0 +1,58 @@
+module CardDav
+  module Handlers
+    class DeleteHandler
+      include ResponseHelper
+
+      def call(context)
+        auth_error = authorize!(context)
+        return auth_error if auth_error
+
+        write_error = require_writable!(context)
+        return write_error if write_error
+
+        case context.resource_type
+        when :contact
+          delete_contact(context)
+        when :addressbook
+          delete_addressbook(context)
+        else
+          method_not_allowed
+        end
+      end
+
+      private
+
+      def delete_contact(context)
+        addressbook = find_addressbook(context)
+        return not_found unless addressbook
+
+        contact = find_contact(addressbook, context)
+        return not_found unless contact
+
+        if context.if_match && !context.if_match.include?(contact.etag)
+          return precondition_failed
+        end
+
+        ActiveRecord::Base.transaction do
+          contact.destroy!
+          addressbook.increment_sync!
+          addressbook.sync_changes.create!(
+            uri: context.contact_uri,
+            sync_token: addressbook.sync_token,
+            change_type: "deleted"
+          )
+        end
+
+        empty_response(204)
+      end
+
+      def delete_addressbook(context)
+        addressbook = find_addressbook(context)
+        return not_found unless addressbook
+
+        addressbook.destroy!
+        empty_response(204)
+      end
+    end
+  end
+end

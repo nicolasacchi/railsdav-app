@@ -1,0 +1,67 @@
+<div class="container">
+<div class="page-header">
+  <h1>Address Books</h1>
+  <%= link_to "New Addressbook", new_addressbook_path, class: "btn btn-primary" %>
+</div>
+
+<% if @addressbooks.any? %>
+  <% dav_base = "#{Railsdav.site_url}/dav/#{current_user.username}/contacts/" %>
+  <% dav_login = current_user.email.presence || current_user.username %>
+  <% dav_pass = @addressbooks.first.dav_password %>
+  <div class="card">
+    <h3>CardDAV Connection</h3>
+    <div class="dav-url">
+      <span>URL: <code><%= dav_base %></code></span>
+      <button class="copy-btn" data-copy="<%= dav_base %>" title="Copy URL">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
+    </div>
+    <div class="dav-url">
+      <span>Username: <code><%= dav_login %></code></span>
+      <button class="copy-btn" data-copy="<%= dav_login %>" title="Copy username">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
+    </div>
+    <div class="dav-url">
+      <span>Password: <code><%= dav_pass %></code></span>
+      <button class="copy-btn" data-copy="<%= dav_pass %>" title="Copy password">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
+    </div>
+    <p class="text-muted" style="margin-top: 0.5rem; font-size: 0.85rem;">Use these credentials in your CardDAV client (e.g. DAVx5) to sync all your address books.</p>
+  </div>
+  <% if current_user.respond_to?(:subscribed?) && !current_user.subscribed? %>
+    <div class="flash flash-alert" style="margin-top: 1rem;">
+      CardDAV sync is disabled. <a href="/subscription">Subscribe</a> to enable syncing with your devices.
+    </div>
+  <% end %>
+<% end %>
+
+<% @addressbooks.each do |ab| %>
+  <div class="card">
+    <h2><%= link_to ab.displayname, addressbook_path(ab.uri) %></h2>
+    <p><%= ab.description %></p>
+    <p><%= ab.contacts.count %> contacts</p>
+  </div>
+<% end %>
+
+<% shared = current_user.addressbook_shares.accepted.includes(addressbook: :user) %>
+<% if shared.any? %>
+  <div class="page-header" style="margin-top: 2rem;">
+    <h2>Shared with me</h2>
+  </div>
+
+  <% shared.each do |share| %>
+    <% ab = share.addressbook %>
+    <% owner = ab.user %>
+    <div class="card">
+      <h2><%= ab.displayname %></h2>
+      <p>Shared by <strong><%= owner.username %></strong> &mdash; <span class="status-badge <%= share.writable? ? 'status-active' : '' %>"><%= share.permission %></span></p>
+      <p><%= ab.contacts.count %> contacts</p>
+    </div>
+  <% end %>
+<% end %>
+</div>

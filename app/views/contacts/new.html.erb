@@ -1,0 +1,66 @@
+<div class="container">
+<turbo-frame id="contact-detail">
+<div class="detail-header">
+  <h2>New Contact</h2>
+  <p class="contact-meta">in <%= @addressbook.displayname %></p>
+</div>
+
+<%= form_with url: addressbook_contacts_path(@addressbook.uri), method: :post, local: true do |f| %>
+  <div class="form-group">
+    <%= f.label :first_name, "First Name" %>
+    <%= f.text_field :first_name %>
+  </div>
+  <div class="form-group">
+    <%= f.label :last_name, "Last Name" %>
+    <%= f.text_field :last_name %>
+  </div>
+  <div class="form-group">
+    <%= f.label "emails[]", "Email" %>
+    <%= f.text_field "emails[]" %>
+  </div>
+  <div class="form-group">
+    <%= f.label "phones[]", "Phone" %>
+    <%= f.text_field "phones[]" %>
+  </div>
+  <div class="form-group">
+    <%= f.label :organization %>
+    <%= f.text_field :organization %>
+  </div>
+  <div class="form-group">
+    <%= f.label :title %>
+    <%= f.text_field :title %>
+  </div>
+  <div class="form-group">
+    <%= f.label :note, "Notes" %>
+    <%= f.text_area :note, rows: 3 %>
+  </div>
+
+  <% if @groups.any? %>
+    <div class="form-group">
+      <label>Groups</label>
+      <div class="group-checkboxes">
+        <% @groups.each do |group| %>
+          <label class="checkbox-label">
+            <%= check_box_tag "group_ids[]", group.id, false %>
+            <%= group.name %>
+          </label>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <details style="margin-top: 1rem; margin-bottom: 1rem;">
+    <summary>Paste raw vCard instead</summary>
+    <div class="form-group" style="margin-top: 0.5rem;">
+      <%= f.label :raw_vcard, "Raw vCard" %>
+      <%= f.text_area :raw_vcard, placeholder: "BEGIN:VCARD\nVERSION:3.0\n..." %>
+    </div>
+  </details>
+
+  <div class="actions">
+    <%= f.submit "Create Contact", class: "btn btn-primary" %>
+    <%= link_to "Cancel", all_contacts_path, class: "btn" %>
+  </div>
+<% end %>
+</turbo-frame>
+</div>

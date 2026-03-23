@@ -43,6 +43,7 @@ class RegistrationsController < ApplicationController
     @user.email = @pending_share.invited_email if @pending_share
 
     if @user.save
+      reset_session
       session[:user_id] = @user.id
       redirect_to all_contacts_path, notice: "Account created successfully."
     else

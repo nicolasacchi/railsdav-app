@@ -54,12 +54,7 @@ module CardDav
 
         ActiveRecord::Base.transaction do
           contact.update!(vcard_data: vcard_data)
-          addressbook.increment_sync!
-          addressbook.sync_changes.create!(
-            uri: contact.uri,
-            sync_token: addressbook.sync_token,
-            change_type: "modified"
-          )
+          addressbook.record_sync_change!(uri: contact.uri, change_type: "modified")
         end
 
         empty_response(204, { "ETag" => contact.etag })
@@ -76,12 +71,7 @@ module CardDav
             uri: context.contact_uri,
             vcard_data: vcard_data
           )
-          addressbook.increment_sync!
-          addressbook.sync_changes.create!(
-            uri: contact.uri,
-            sync_token: addressbook.sync_token,
-            change_type: "created"
-          )
+          addressbook.record_sync_change!(uri: contact.uri, change_type: "created")
         end
 
         empty_response(201, { "ETag" => contact.etag })

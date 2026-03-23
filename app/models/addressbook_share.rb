@@ -56,11 +56,17 @@ class AddressbookShare < ApplicationRecord
   end
 
   def generate_token
-    self.token = SecureRandom.urlsafe_base64(24)
+    loop do
+      self.token = SecureRandom.urlsafe_base64(24)
+      break unless AddressbookShare.exists?(token: token)
+    end
   end
 
   def generate_invitation_token
-    self.invitation_token = SecureRandom.urlsafe_base64(24)
+    loop do
+      self.invitation_token = SecureRandom.urlsafe_base64(24)
+      break unless AddressbookShare.exists?(invitation_token: invitation_token)
+    end
   end
 
   def set_invitation_expiry

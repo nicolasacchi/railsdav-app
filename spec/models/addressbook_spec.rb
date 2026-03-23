@@ -29,23 +29,28 @@ RSpec.describe Addressbook, type: :model do
   end
 
   describe "dav_password" do
-    it "auto-generates on create" do
+    it "auto-generates digest on create" do
       ab = create(:addressbook)
-      expect(ab.dav_password).to be_present
-      expect(ab.dav_password.length).to eq(24)
+      expect(ab.dav_password_digest).to be_present
     end
 
-    it "preserves explicit value" do
-      ab = create(:addressbook, dav_password: "my-custom-password")
-      expect(ab.dav_password).to eq("my-custom-password")
+    it "authenticates with correct password" do
+      ab = create(:addressbook)
+      expect(ab.authenticate_dav(DAV_TEST_PASSWORD)).to be true
+    end
+
+    it "rejects wrong password" do
+      ab = create(:addressbook)
+      expect(ab.authenticate_dav("wrong-password")).to be false
     end
 
     it "regenerates with a new value" do
       ab = create(:addressbook)
-      old_password = ab.dav_password
-      ab.regenerate_dav_password!
-      expect(ab.reload.dav_password).not_to eq(old_password)
-      expect(ab.dav_password.length).to eq(24)
+      old_digest = ab.dav_password_digest
+      plaintext = ab.regenerate_dav_password!
+      expect(ab.reload.dav_password_digest).not_to eq(old_digest)
+      expect(plaintext).to be_present
+      expect(ab.authenticate_dav(plaintext)).to be true
     end
   end
 

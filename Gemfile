@@ -12,6 +12,7 @@ gem "nokogiri"
 gem "csv"
 gem "pagy", ">= 9.0"
 gem "rack-attack"
+gem "solid_cache"
 gem "solid_queue"
 
 gem "bootsnap", require: false

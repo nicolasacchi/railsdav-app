@@ -16,7 +16,7 @@ services:
       - SMTP_USERNAME=${SMTP_USERNAME:-}
       - SMTP_PASSWORD=${SMTP_PASSWORD:-}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme123}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - SOLID_QUEUE_IN_PUMA=true
     volumes:
       - data:/rails/storage

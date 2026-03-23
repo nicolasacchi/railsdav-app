@@ -22,8 +22,7 @@ class ContactsController < ApplicationController
     end
 
     addressbook_ids = addressbooks_to_show.map(&:id)
-    scope = Contact.individuals.where(addressbook_id: addressbook_ids)
-                   .order(Arel.sql("CASE WHEN cached_display_name = '' THEN 1 ELSE 0 END, LOWER(cached_display_name)"))
+    scope = Contact.individuals.where(addressbook_id: addressbook_ids).display_order
 
     # Group filtering
     @groups = ContactGroup.where(addressbook_id: addressbook_ids).ordered
@@ -75,12 +74,7 @@ class ContactsController < ApplicationController
     )
 
     if @contact.save
-      @addressbook.increment_sync!
-      @addressbook.sync_changes.create!(
-        uri: @contact.uri,
-        sync_token: @addressbook.sync_token,
-        change_type: "created"
-      )
+      @addressbook.record_sync_change!(uri: @contact.uri, change_type: "created")
       redirect_to addressbook_contact_path(@addressbook.uri, @contact.uri), notice: "Contact created."
     else
       @groups = @addressbook.contact_groups.ordered
@@ -110,12 +104,7 @@ class ContactsController < ApplicationController
     end
 
     if @contact.update(vcard_data: vcard_data)
-      @addressbook.increment_sync!
-      @addressbook.sync_changes.create!(
-        uri: @contact.uri,
-        sync_token: @addressbook.sync_token,
-        change_type: "modified"
-      )
+      @addressbook.record_sync_change!(uri: @contact.uri, change_type: "modified")
       redirect_to addressbook_contact_path(@addressbook.uri, @contact.uri), notice: "Contact updated."
     else
       @display = Vcard::Parser.parse(@contact.vcard_data)
@@ -127,12 +116,7 @@ class ContactsController < ApplicationController
   def destroy
     uri = @contact.uri
     @contact.destroy!
-    @addressbook.increment_sync!
-    @addressbook.sync_changes.create!(
-      uri: uri,
-      sync_token: @addressbook.sync_token,
-      change_type: "deleted"
-    )
+    @addressbook.record_sync_change!(uri: uri, change_type: "deleted")
     redirect_to all_contacts_path, notice: "Contact deleted."
   end
 
@@ -153,7 +137,8 @@ class ContactsController < ApplicationController
 
   def set_addressbook
     @addressbook = current_user.addressbooks.find_by(uri: params[:addressbook_uri])
-    @addressbook ||= current_user.shared_addressbooks.find_by!(uri: params[:addressbook_uri])
+    @addressbook ||= current_user.shared_addressbooks.find_by(uri: params[:addressbook_uri])
+    raise ActiveRecord::RecordNotFound, "Addressbook not found" unless @addressbook
   end
 
   def set_contact

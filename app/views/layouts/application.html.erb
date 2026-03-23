@@ -15,7 +15,7 @@
     <nav class="navbar">
       <div class="container navbar-inner">
         <a href="<%= root_path %>" class="brand"><img src="/icon.svg" alt="" width="24" height="24" class="brand-logo">Contacts</a>
-        <button class="nav-toggle" aria-label="Menu" onclick="this.closest('.navbar-inner').classList.toggle('nav-open')">
+        <button class="nav-toggle" aria-label="Menu" data-nav-toggle>
           <span></span><span></span><span></span>
         </button>
         <% if current_user %>
@@ -64,8 +64,11 @@
         </div>
       </footer>
     <% end %>
-    <script>
+    <%= javascript_tag nonce: true do %>
       document.addEventListener("click", function(e) {
+        var toggle = e.target.closest("[data-nav-toggle]");
+        if (toggle) { toggle.closest(".navbar-inner").classList.toggle("nav-open"); return; }
+        if (e.target.hasAttribute("data-select-on-click")) { e.target.select(); return; }
         var btn = e.target.closest(".copy-btn");
         if (!btn) return;
         var text = btn.getAttribute("data-copy");
@@ -80,6 +83,6 @@
           }, 1500);
         });
       });
-    </script>
+    <% end %>
   </body>
 </html>

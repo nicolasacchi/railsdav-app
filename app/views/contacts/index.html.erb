@@ -127,7 +127,7 @@
   </div>
 </div>
 
-<script>
+<%= javascript_tag nonce: true do %>
 (function() {
   var panel = document.getElementById("contact-detail-panel");
   var sidebar = document.querySelector(".contacts-sidebar");
@@ -270,4 +270,4 @@
     });
   }
 })();
-</script>
+<% end %>

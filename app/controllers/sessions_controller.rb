@@ -8,8 +8,10 @@ class SessionsController < ApplicationController
   def create
     user = User.find_by(email: params[:email]&.strip&.downcase)
     if user&.authenticate(params[:password])
+      return_to = session[:return_to]
+      reset_session
       session[:user_id] = user.id
-      redirect_to session.delete(:return_to) || all_contacts_path, notice: "Logged in successfully."
+      redirect_to return_to || all_contacts_path, notice: "Logged in successfully."
     else
       flash.now[:alert] = "Invalid email or password."
       render :new, status: :unprocessable_entity
@@ -17,7 +19,7 @@ class SessionsController < ApplicationController
   end
 
   def destroy
-    session.delete(:user_id)
+    reset_session
     redirect_to login_path, notice: "Logged out."
   end
 end

@@ -46,12 +46,12 @@ module CardDav
       # Override path_segments to match addressbook/contact structure
       if segments.length == 1
         # /dav/public/{token}/ → addressbook collection
-        context.instance_variable_set(:@path_segments, [ owner.username, "contacts", addressbook.uri ])
-        context.instance_variable_set(:@resource_type, :addressbook)
+        context.path_segments = [ owner.username, "contacts", addressbook.uri ]
+        context.resource_type = :addressbook
       elsif segments.length == 2
         # /dav/public/{token}/{card}.vcf → contact
-        context.instance_variable_set(:@path_segments, [ owner.username, "contacts", addressbook.uri, segments[1] ])
-        context.instance_variable_set(:@resource_type, :contact)
+        context.path_segments = [ owner.username, "contacts", addressbook.uri, segments[1] ]
+        context.resource_type = :contact
       else
         return [404, { "Content-Type" => "text/plain", "Content-Length" => "9" }, ["Not Found"]]
       end

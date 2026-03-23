@@ -6,8 +6,7 @@ class AddressbooksController < ApplicationController
   end
 
   def show
-    scope = @addressbook.contacts
-              .order(Arel.sql("CASE WHEN cached_display_name = '' THEN 1 ELSE 0 END, LOWER(cached_display_name)"))
+    scope = @addressbook.contacts.display_order
     @pagy, contacts = pagy(scope)
     @parsed_contacts = contacts.map do |c|
       { contact: c, display: Vcard::Parser.parse(c.vcard_data) }
@@ -58,8 +57,9 @@ class AddressbooksController < ApplicationController
   end
 
   def regenerate_dav_password
-    @addressbook.regenerate_dav_password!
-    redirect_to addressbook_path(@addressbook.uri), notice: "DAV password regenerated."
+    plaintext = @addressbook.regenerate_dav_password!
+    flash[:dav_password] = plaintext
+    redirect_to addressbook_path(@addressbook.uri), notice: "DAV password regenerated. Copy it now — it won't be shown again."
   end
 
   def import

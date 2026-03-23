@@ -11,6 +11,7 @@ class Contact < ApplicationRecord
 
   scope :individuals, -> { where(kind: "individual") }
   scope :group_vcards, -> { where(kind: "group") }
+  scope :display_order, -> { order(Arel.sql("CASE WHEN cached_display_name = '' THEN 1 ELSE 0 END, LOWER(cached_display_name)")) }
 
   before_validation :compute_etag, if: -> { vcard_data.present? && vcard_data_changed? }
   before_validation :extract_uid, if: -> { vcard_data.present? && vcard_data_changed? }

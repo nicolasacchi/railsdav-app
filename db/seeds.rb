@@ -1,4 +1,4 @@
-if ENV["ADMIN_EMAIL"].present? && ENV["ADMIN_PASSWORD"].present?
+if ENV["ADMIN_EMAIL"].present? && ENV["ADMIN_PASSWORD"].present? && ENV["ADMIN_PASSWORD"].length >= 8
   admin = User.find_or_initialize_by(email: ENV["ADMIN_EMAIL"])
   admin.assign_attributes(
     password: ENV["ADMIN_PASSWORD"],

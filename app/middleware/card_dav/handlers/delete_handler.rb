@@ -35,12 +35,7 @@ module CardDav
 
         ActiveRecord::Base.transaction do
           contact.destroy!
-          addressbook.increment_sync!
-          addressbook.sync_changes.create!(
-            uri: context.contact_uri,
-            sync_token: addressbook.sync_token,
-            change_type: "deleted"
-          )
+          addressbook.record_sync_change!(uri: context.contact_uri, change_type: "deleted")
         end
 
         empty_response(204)

@@ -58,15 +58,13 @@ RSpec.describe "Authentication & Authorization", type: :request do
 
   describe "DAV password authentication" do
     it "authenticates with addressbook DAV password" do
-      ab = user.addressbooks.first
-      dav_propfind "/dav/alice/", user: user, password: ab.dav_password, depth: 0,
+      dav_propfind "/dav/alice/", user: user, password: DAV_TEST_PASSWORD, depth: 0,
                    body: propfind_xml("displayname")
       expect(response).to have_http_status(207)
     end
 
     it "authenticates with email and DAV password" do
-      ab = user.addressbooks.first
-      headers = basic_auth_header(user.email, ab.dav_password)
+      headers = basic_auth_header(user.email, DAV_TEST_PASSWORD)
       headers["HTTP_DEPTH"] = "0"
       process(:propfind, "/dav/alice/", headers: headers, params: propfind_xml("displayname"))
       expect(response).to have_http_status(207)

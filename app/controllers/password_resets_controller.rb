@@ -27,6 +27,7 @@ class PasswordResetsController < ApplicationController
     end
 
     if @user.update(password: params[:password], password_confirmation: params[:password_confirmation])
+      reset_session
       session[:user_id] = @user.id
       redirect_to all_contacts_path, notice: "Password has been reset. You are now logged in."
     else

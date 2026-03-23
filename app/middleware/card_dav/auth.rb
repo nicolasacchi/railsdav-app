@@ -12,11 +12,8 @@ module CardDav
       end
       return false unless user
 
-      # Only accept per-addressbook DAV passwords (timing-safe).
-      # The main password is intentionally excluded — DAV clients
-      # must use the scoped DAV password, not the web login credential.
-      user.addressbooks.where.not(dav_password: nil).each do |ab|
-        if ActiveSupport::SecurityUtils.secure_compare(ab.dav_password, password)
+      user.addressbooks.where.not(dav_password_digest: nil).each do |ab|
+        if ab.authenticate_dav(password)
           context.user = user
           return true
         end

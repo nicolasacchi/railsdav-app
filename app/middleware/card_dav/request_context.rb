@@ -3,6 +3,7 @@ module CardDav
     attr_reader :env, :method, :path, :depth, :body, :content_type,
                 :if_match, :if_none_match
     attr_accessor :user, :share, :shared_addressbook, :public_token
+    attr_writer :path_segments, :resource_type
 
     def initialize(env)
       @env = env

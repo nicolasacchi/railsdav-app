@@ -20,11 +20,15 @@
   </button>
 </div>
 <div class="dav-url" style="margin-bottom: 1rem;">
-  <span>Password: <code><%= @addressbook.dav_password %></code></span>
-  <button class="copy-btn" data-copy="<%= @addressbook.dav_password %>" title="Copy DAV password">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polyline points="20 6 9 17 4 12"/></svg>
-  </button>
+  <% if flash[:dav_password] %>
+    <span>Password: <code><%= flash[:dav_password] %></code></span>
+    <button class="copy-btn" data-copy="<%= flash[:dav_password] %>" title="Copy DAV password">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polyline points="20 6 9 17 4 12"/></svg>
+    </button>
+  <% else %>
+    <span>Password: <code>••••••••••••</code></span>
+  <% end %>
   <%= button_to "Regenerate", regenerate_dav_password_addressbook_path(@addressbook.uri), method: :post, class: "btn btn-sm", form: { style: "display: inline;" }, data: { confirm: "Regenerate DAV password? Any CardDAV client using this password will need to be updated." } %>
 </div>
 <p class="text-muted" style="margin-top: -0.5rem; margin-bottom: 1rem; font-size: 0.85rem;">Use this password in your CardDAV client instead of your account password.</p>
@@ -163,7 +167,7 @@
     <% public_link = @addressbook.shares.public_links.first %>
     <% if public_link %>
       <div class="public-link-box">
-        <input type="text" value="<%= public_share_url(public_link.token) %>" readonly class="search-input" style="flex: 1;" onclick="this.select()">
+        <input type="text" value="<%= public_share_url(public_link.token) %>" readonly class="search-input" style="flex: 1;" data-select-on-click>
         <%= button_to "Revoke", destroy_public_link_addressbook_path(@addressbook.uri), method: :delete, class: "btn btn-sm btn-danger", form: { style: "display: inline;" } %>
       </div>
       <p class="share-hint">DAV: <%= Railsdav.site_url %>/dav/public/<%= public_link.token %>/</p>

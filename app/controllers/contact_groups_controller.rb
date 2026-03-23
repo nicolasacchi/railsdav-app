@@ -17,19 +17,8 @@ class ContactGroupsController < ApplicationController
     ActiveRecord::Base.transaction do
       @group.update!(name: new_name)
 
-      # Update CATEGORIES in all member contacts' vcard_data
-      @group.contacts.individuals.find_each do |contact|
-        parsed = Vcard::Parser.parse(contact.vcard_data)
-        next unless parsed
-
-        categories = parsed.categories || []
-        idx = categories.index { |c| c.casecmp(old_name) == 0 }
-        next unless idx
-
-        categories[idx] = new_name
-        new_vcard = Vcard::Parser.update_categories(contact.vcard_data, categories)
-        contact.update!(vcard_data: new_vcard)
-        @addressbook.sync_changes.create!(uri: contact.uri, sync_token: @addressbook.sync_token, change_type: "modified")
+      @group.update_member_vcards do |categories|
+        categories.map { |c| c.casecmp(old_name) == 0 ? new_name : c }
       end
 
       # Update KIND:group vCard FN if exists
@@ -50,15 +39,8 @@ class ContactGroupsController < ApplicationController
 
   def destroy
     ActiveRecord::Base.transaction do
-      # Remove category from member contacts' vcard_data
-      @group.contacts.individuals.find_each do |contact|
-        parsed = Vcard::Parser.parse(contact.vcard_data)
-        next unless parsed
-
-        categories = (parsed.categories || []).reject { |c| c.casecmp(@group.name) == 0 }
-        new_vcard = Vcard::Parser.update_categories(contact.vcard_data, categories)
-        contact.update!(vcard_data: new_vcard)
-        @addressbook.sync_changes.create!(uri: contact.uri, sync_token: @addressbook.sync_token, change_type: "modified")
+      @group.update_member_vcards do |categories|
+        categories.reject { |c| c.casecmp(@group.name) == 0 }
       end
 
       # Destroy KIND:group vCard if exists

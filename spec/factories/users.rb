@@ -7,5 +7,9 @@ FactoryBot.define do
     trait :admin do
       admin { true }
     end
+
+    after(:create) do |user|
+      user.addressbooks.update_all(dav_password_digest: BCrypt::Password.create(DAV_TEST_PASSWORD))
+    end
   end
 end

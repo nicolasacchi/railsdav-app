@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_22_000003) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_23_000001) do
   create_table "addressbook_shares", force: :cascade do |t|
     t.integer "addressbook_id", null: false
     t.datetime "created_at", null: false
@@ -34,7 +34,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_22_000003) do
   create_table "addressbooks", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.integer "ctag", default: 0, null: false
-    t.string "dav_password"
+    t.string "dav_password_digest"
     t.text "description"
     t.string "displayname", default: "Contacts", null: false
     t.integer "sync_token", default: 0, null: false

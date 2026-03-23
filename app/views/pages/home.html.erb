@@ -3,7 +3,11 @@
     <h1 class="hero-title">Your Contacts.<br>Your Server.</h1>
     <p class="hero-subtitle">A private, self-hosted CardDAV server that syncs with your phone. No big tech, no data mining, no compromise.</p>
     <div class="hero-actions">
-      <%= link_to "Get Started", register_path, class: "btn btn-hero btn-primary" %>
+      <% if Railsdav.allow_registration? %>
+        <%= link_to "Get Started", register_path, class: "btn btn-hero btn-primary" %>
+      <% else %>
+        <%= link_to "Log In", login_path, class: "btn btn-hero btn-primary" %>
+      <% end %>
     </div>
   </div>
 </section>

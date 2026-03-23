@@ -21,6 +21,19 @@ module Admin
       @contact_count = Contact.joins(:addressbook).where(addressbooks: { user_id: @user.id }).count
     end
 
+    def new
+      @user = User.new
+    end
+
+    def create
+      @user = User.new(create_user_params)
+      if @user.save
+        redirect_to admin_user_path(@user), notice: "User created."
+      else
+        render :new, status: :unprocessable_entity
+      end
+    end
+
     def edit
     end
 
@@ -44,8 +57,15 @@ module Admin
       @user = User.find(params[:id])
     end
 
+    def create_user_params
+      params.require(:user).permit(:username, :email, :password, :password_confirmation, :admin)
+    end
+
     def user_params
-      params.require(:user).permit(:username, :email, :admin)
+      permitted = params.require(:user).permit(:username, :email, :admin, :password, :password_confirmation)
+      permitted.delete(:password) if permitted[:password].blank?
+      permitted.delete(:password_confirmation) if permitted[:password].blank?
+      permitted
     end
   end
 end

@@ -24,16 +24,16 @@ RSpec.describe Railsdav do
   end
 
   describe ".allow_registration?" do
-    it "returns true by default" do
+    it "returns false by default" do
       allow(ENV).to receive(:fetch).and_call_original
-      allow(ENV).to receive(:fetch).with("ALLOW_REGISTRATION", "true").and_return("true")
-      expect(Railsdav.allow_registration?).to be true
+      allow(ENV).to receive(:fetch).with("ALLOW_REGISTRATION", "false").and_return("false")
+      expect(Railsdav.allow_registration?).to be false
     end
 
-    it "returns false when set to false" do
+    it "returns true when set to true" do
       allow(ENV).to receive(:fetch).and_call_original
-      allow(ENV).to receive(:fetch).with("ALLOW_REGISTRATION", "true").and_return("false")
-      expect(Railsdav.allow_registration?).to be false
+      allow(ENV).to receive(:fetch).with("ALLOW_REGISTRATION", "false").and_return("true")
+      expect(Railsdav.allow_registration?).to be true
     end
   end
 

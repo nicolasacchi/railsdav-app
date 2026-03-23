@@ -17,5 +17,7 @@
     <%= f.submit "Log In", class: "btn btn-primary btn-block" %>
   <% end %>
 
-  <p class="auth-footer">Don't have an account? <%= link_to "Sign up", register_path %></p>
+  <% if Railsdav.allow_registration? %>
+    <p class="auth-footer">Don't have an account? <%= link_to "Sign up", register_path %></p>
+  <% end %>
 </div>

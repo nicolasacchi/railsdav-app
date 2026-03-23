@@ -31,7 +31,7 @@
         <% else %>
           <div class="nav-actions">
             <%= link_to "Log In", login_path, class: "btn btn-sm" %>
-            <%= link_to "Sign Up", register_path, class: "btn btn-sm btn-primary" %>
+            <% if Railsdav.allow_registration? %><%= link_to "Sign Up", register_path, class: "btn btn-sm btn-primary" %><% end %>
           </div>
         <% end %>
       </div>

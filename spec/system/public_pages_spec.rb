@@ -4,7 +4,7 @@ RSpec.describe "Public pages", type: :system do
   it "shows the homepage" do
     visit root_path
     expect(page).to have_content("Your Contacts")
-    expect(page).to have_link("Get Started")
+    expect(page).to have_link("Log In")
   end
 
   it "shows the privacy policy" do

@@ -9,7 +9,7 @@ module Railsdav
     end
 
     def allow_registration?
-      ENV.fetch("ALLOW_REGISTRATION", "true") != "false"
+      ENV.fetch("ALLOW_REGISTRATION", "false") != "false"
     end
 
     def mailer_from

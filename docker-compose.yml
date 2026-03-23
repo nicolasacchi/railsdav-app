@@ -9,7 +9,7 @@ services:
       - APP_HOST=${APP_HOST:-localhost}
       - SITE_NAME=${SITE_NAME:-Contacts}
       - SITE_URL=${SITE_URL:-http://localhost:3000}
-      - ALLOW_REGISTRATION=${ALLOW_REGISTRATION:-true}
+      - ALLOW_REGISTRATION=${ALLOW_REGISTRATION:-false}
       - MAILER_FROM=${MAILER_FROM:-noreply@example.com}
       - SMTP_ADDRESS=${SMTP_ADDRESS:-}
       - SMTP_PORT=${SMTP_PORT:-587}

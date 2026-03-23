@@ -2,6 +2,8 @@ require "rails_helper"
 
 RSpec.describe "Registration", type: :request do
   describe "GET /register" do
+    before { allow(Railsdav).to receive(:allow_registration?).and_return(true) }
+
     it "renders the registration form" do
       get register_path
       expect(response).to have_http_status(200)
@@ -10,6 +12,8 @@ RSpec.describe "Registration", type: :request do
   end
 
   describe "POST /register" do
+    before { allow(Railsdav).to receive(:allow_registration?).and_return(true) }
+
     it "creates a new user and logs in" do
       expect {
         post register_path, params: { user: {

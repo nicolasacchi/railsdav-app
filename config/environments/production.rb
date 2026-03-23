@@ -45,7 +45,6 @@ Rails.application.configure do
 
   # Replace the default in-process memory cache store with Solid Cache.
   config.cache_store = :solid_cache_store
-  config.solid_cache.connects_to = { database: { writing: :cache } }
 
   # Use Solid Queue for reliable job processing with retries.
   config.active_job.queue_adapter = :solid_queue

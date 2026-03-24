@@ -8,6 +8,14 @@
       </button>
     <% end %>
   </h2>
+  <% if display&.nickname.present? || display&.pronouns.present? %>
+    <p class="contact-meta">
+      <%= display.nickname if display.nickname.present? %><% if display.nickname.present? && display.pronouns.present? %> &middot; <% end %><%= display.pronouns if display.pronouns.present? %>
+    </p>
+  <% end %>
+  <% if display&.phonetic_first_name.present? || display&.phonetic_last_name.present? %>
+    <p class="contact-meta" style="font-style: italic;">Phonetic: <%= [display.phonetic_first_name, display.phonetic_last_name].compact.join(" ") %></p>
+  <% end %>
   <p class="contact-meta"><%= link_to addressbook.displayname, addressbook_path(addressbook.uri) %><% if addressbook.user_id != current_user.id %> (from <%= addressbook.user.username %>)<% end %></p>
   <div class="actions">
     <%= link_to edit_addressbook_contact_path(addressbook.uri, contact.uri), class: "btn btn-sm", data: { panel_link: true } do %><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit<% end %>
@@ -57,10 +65,21 @@
     </div>
   <% end %>
 
+  <% if display.impp.any? %>
+    <div class="detail-section">
+      <h3>Messaging</h3>
+      <% display.impp.each do |im| %>
+        <div class="detail-value">
+          <span><%= im[:value] %><% if im[:type] %> <span class="contact-meta">(<%= im[:type] %>)</span><% end %></span>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
   <% if display.organization.present? %>
     <div class="detail-section">
       <h3>Organization</h3>
-      <% org_text = display.organization + (display.title.present? ? " - #{display.title}" : "") %>
+      <% org_text = [display.organization, display.title, display.role].compact.reject(&:empty?).join(" - ") %>
       <div class="detail-value">
         <span><%= org_text %></span>
         <button class="copy-btn" data-copy="<%= org_text %>" title="Copy organization">
@@ -111,6 +130,33 @@
           </button>
         </div>
       <% end %>
+    </div>
+  <% end %>
+
+  <% if display.social_profiles.any? %>
+    <div class="detail-section">
+      <h3>Social Profiles</h3>
+      <% display.social_profiles.each do |sp| %>
+        <div class="detail-value">
+          <% href = sp[:value].start_with?("http") ? sp[:value] : "https://#{sp[:value]}" %>
+          <a href="<%= href %>" target="_blank" rel="noopener"><%= sp[:value] %></a>
+          <% if sp[:type] %><span class="contact-meta">(<%= sp[:type] %>)</span><% end %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% if display.geo.present? %>
+    <div class="detail-section">
+      <h3>Location</h3>
+      <div class="detail-value"><span><%= display.geo %></span></div>
+    </div>
+  <% end %>
+
+  <% if display.gender.present? %>
+    <div class="detail-section">
+      <h3>Gender</h3>
+      <div class="detail-value"><span><%= display.gender %></span></div>
     </div>
   <% end %>
 

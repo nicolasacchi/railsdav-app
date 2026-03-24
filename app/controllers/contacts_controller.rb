@@ -157,7 +157,15 @@ class ContactsController < ApplicationController
   end
 
   def contact_form_params
-    params.permit(:full_name, :first_name, :last_name, :organization, :title, :note, emails: [], phones: [])
+    params.permit(
+      :full_name, :first_name, :last_name, :middle_name, :name_prefix, :name_suffix,
+      :nickname, :pronouns, :gender, :role,
+      :organization, :title, :note, :birthday, :anniversary, :photo_url,
+      emails: [], phones: [], urls: [],
+      addresses: [:type, :street, :city, :state, :zip, :country],
+      impp: [:type, :value],
+      social_profiles: [:type, :value]
+    )
   end
 
   def generate_uri

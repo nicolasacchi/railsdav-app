@@ -12,7 +12,16 @@ module Contacts
       "name" => "full_name",
       "email" => "email_1",
       "phone" => "phone_1",
-      "company" => "organization"
+      "company" => "organization",
+      "bday" => "birthday",
+      "website" => "url_1",
+      "url" => "url_1",
+      "street" => "address_1_street",
+      "city" => "address_1_city",
+      "state" => "address_1_state",
+      "zip" => "address_1_zip",
+      "postal_code" => "address_1_zip",
+      "country" => "address_1_country"
     }.freeze
 
     def initialize(addressbook:, file:, filename:)
@@ -100,16 +109,39 @@ module Contacts
 
         emails = [ data["email_1"], data["email_2"], data["email_3"] ].compact_blank
         phones = [ data["phone_1"], data["phone_2"], data["phone_3"] ].compact_blank
+        urls = [ data["url_1"], data["url_2"], data["url_3"] ].compact_blank
+
+        addresses = []
+        if data["address_1_street"].present? || data["address_1_city"].present?
+          addresses << {
+            type: "HOME",
+            street: data["address_1_street"],
+            city: data["address_1_city"],
+            state: data["address_1_state"],
+            zip: data["address_1_zip"],
+            country: data["address_1_country"]
+          }
+        end
 
         params = {
           full_name: full_name,
           first_name: first_name,
           last_name: last_name,
+          middle_name: data["middle_name"],
+          name_prefix: data["name_prefix"],
+          name_suffix: data["name_suffix"],
+          nickname: data["nickname"],
+          pronouns: data["pronouns"],
           emails: emails,
           phones: phones,
           organization: data["organization"],
           title: data["title"],
-          note: data["note"]
+          role: data["role"],
+          note: data["note"],
+          birthday: data["birthday"],
+          anniversary: data["anniversary"],
+          urls: urls,
+          addresses: addresses
         }
         params[:uid] = data["uid"] if data["uid"].present?
         if data["categories"].present?
@@ -138,11 +170,24 @@ module Contacts
           full_name: full_name,
           first_name: first_name,
           last_name: last_name,
+          middle_name: obj["middle_name"],
+          name_prefix: obj["name_prefix"],
+          name_suffix: obj["name_suffix"],
+          nickname: obj["nickname"],
+          pronouns: obj["pronouns"],
+          gender: obj["gender"],
           emails: Array(obj["emails"]),
           phones: Array(obj["phones"]),
+          impp: Array(obj["impp"]).map { |im| im.is_a?(Hash) ? im.transform_keys(&:to_sym) : nil }.compact,
+          social_profiles: Array(obj["social_profiles"]).map { |sp| sp.is_a?(Hash) ? sp.transform_keys(&:to_sym) : nil }.compact,
           organization: obj["organization"],
           title: obj["title"],
-          note: obj["note"]
+          role: obj["role"],
+          note: obj["note"],
+          birthday: obj["birthday"],
+          anniversary: obj["anniversary"],
+          urls: Array(obj["urls"]),
+          addresses: Array(obj["addresses"]).map { |a| a.is_a?(Hash) ? a.transform_keys(&:to_sym) : nil }.compact
         }
         params[:uid] = obj["uid"] if obj["uid"].present?
         if obj["categories"].present?

@@ -33,7 +33,7 @@ RSpec.describe Contacts::Exporter do
     it "produces CSV with correct headers" do
       result = described_class.to_csv(contacts)
       csv = CSV.parse(result.sub("\xEF\xBB\xBF", ""), headers: true)
-      expect(csv.headers).to eq(%w[uid full_name first_name last_name email_1 email_2 email_3 phone_1 phone_2 phone_3 organization title note categories])
+      expect(csv.headers).to eq(Contacts::Exporter::CSV_HEADERS)
     end
 
     it "maps contact fields correctly" do

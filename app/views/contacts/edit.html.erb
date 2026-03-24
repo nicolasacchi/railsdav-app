@@ -13,6 +13,32 @@
     <%= f.label :last_name, "Last Name" %>
     <%= f.text_field :last_name, value: @display&.last_name %>
   </div>
+
+  <details>
+    <summary>Name details</summary>
+    <div class="form-group">
+      <%= f.label :name_prefix, "Prefix (Dr., Mr.)" %>
+      <%= f.text_field :name_prefix, value: @display&.name_prefix %>
+    </div>
+    <div class="form-group">
+      <%= f.label :middle_name, "Middle Name" %>
+      <%= f.text_field :middle_name, value: @display&.middle_name %>
+    </div>
+    <div class="form-group">
+      <%= f.label :name_suffix, "Suffix (Jr., III)" %>
+      <%= f.text_field :name_suffix, value: @display&.name_suffix %>
+    </div>
+  </details>
+
+  <div class="form-group">
+    <%= f.label :nickname %>
+    <%= f.text_field :nickname, value: @display&.nickname %>
+  </div>
+  <div class="form-group">
+    <%= f.label :pronouns, "Pronouns" %>
+    <%= f.text_field :pronouns, value: @display&.pronouns, placeholder: "e.g. they/them" %>
+  </div>
+
   <div class="form-group">
     <%= f.label "emails[]", "Email" %>
     <% (@display&.emails || []).each do |e| %>
@@ -40,9 +66,85 @@
     <%= f.text_field :title, value: @display&.title %>
   </div>
   <div class="form-group">
+    <%= f.label :role, "Role" %>
+    <%= f.text_field :role, value: @display&.role %>
+  </div>
+  <div class="form-group">
     <%= f.label :note, "Notes" %>
     <%= f.text_area :note, rows: 3, value: @display&.note %>
   </div>
+
+  <div class="form-group">
+    <%= f.label :birthday, "Birthday" %>
+    <%= f.date_field :birthday, value: @display&.birthday %>
+  </div>
+  <div class="form-group">
+    <%= f.label :anniversary, "Anniversary" %>
+    <%= f.date_field :anniversary, value: @display&.anniversary %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label "urls[]", "Website" %>
+    <% (@display&.urls || []).each do |u| %>
+      <%= f.text_field "urls[]", value: u[:value] %>
+    <% end %>
+    <% if @display&.urls&.empty? %>
+      <%= f.text_field "urls[]", placeholder: "https://..." %>
+    <% end %>
+  </div>
+
+  <details>
+    <summary>Addresses</summary>
+    <% addrs = @display&.addresses || [] %>
+    <% addrs = [{}] if addrs.empty? %>
+    <% addrs.each do |a| %>
+      <fieldset style="border: 1px solid var(--border); padding: 0.75rem; margin-bottom: 0.5rem; border-radius: 6px;">
+        <div class="form-group">
+          <label>Type</label>
+          <select name="addresses[][type]">
+            <option value="HOME" <%= 'selected' if a[:type]&.upcase == 'HOME' %>>Home</option>
+            <option value="WORK" <%= 'selected' if a[:type]&.upcase == 'WORK' %>>Work</option>
+            <option value="OTHER" <%= 'selected' if !%w[HOME WORK].include?(a[:type]&.upcase) && a[:type].present? %>>Other</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Street</label><input type="text" name="addresses[][street]" value="<%= a[:street] %>"></div>
+        <div class="form-group"><label>City</label><input type="text" name="addresses[][city]" value="<%= a[:city] %>"></div>
+        <div class="form-group"><label>State</label><input type="text" name="addresses[][state]" value="<%= a[:state] %>"></div>
+        <div class="form-group"><label>ZIP</label><input type="text" name="addresses[][zip]" value="<%= a[:zip] %>"></div>
+        <div class="form-group"><label>Country</label><input type="text" name="addresses[][country]" value="<%= a[:country] %>"></div>
+      </fieldset>
+    <% end %>
+  </details>
+
+  <details>
+    <summary>Social & Messaging</summary>
+    <div class="form-group">
+      <label>Instant Messaging</label>
+      <% ims = @display&.impp || [] %>
+      <% ims = [{}] if ims.empty? %>
+      <% ims.each do |im| %>
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.25rem;">
+          <input type="text" name="impp[][type]" value="<%= im[:type] %>" placeholder="Type" style="width: 30%;">
+          <input type="text" name="impp[][value]" value="<%= im[:value] %>" placeholder="Handle or URI" style="width: 70%;">
+        </div>
+      <% end %>
+    </div>
+    <div class="form-group">
+      <label>Social Profiles</label>
+      <% sps = @display&.social_profiles || [] %>
+      <% sps = [{}] if sps.empty? %>
+      <% sps.each do |sp| %>
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.25rem;">
+          <input type="text" name="social_profiles[][type]" value="<%= sp[:type] %>" placeholder="Service" style="width: 30%;">
+          <input type="text" name="social_profiles[][value]" value="<%= sp[:value] %>" placeholder="URL or handle" style="width: 70%;">
+        </div>
+      <% end %>
+    </div>
+    <div class="form-group">
+      <%= f.label :gender, "Gender" %>
+      <%= f.text_field :gender, value: @display&.gender %>
+    </div>
+  </details>
 
   <% if @groups.any? %>
     <div class="form-group">

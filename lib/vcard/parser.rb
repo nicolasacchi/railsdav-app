@@ -1,11 +1,16 @@
 module Vcard
   class Parser
     ContactDisplay = Data.define(
-      :full_name, :first_name, :last_name, :emails, :phones,
-      :organization, :title, :note, :photo_data, :photo_type,
+      :full_name, :first_name, :last_name, :middle_name, :name_prefix, :name_suffix,
+      :nickname, :pronouns, :gender,
+      :emails, :phones, :impp, :social_profiles,
+      :organization, :title, :role, :note,
+      :photo_data, :photo_type,
       :addresses, :uid, :version,
       :urls, :birthday, :anniversary, :dates, :related,
-      :categories, :kind, :member_uids
+      :categories, :kind, :member_uids,
+      :phonetic_first_name, :phonetic_last_name,
+      :geo, :logo, :sound, :rev, :prodid
     )
 
     def self.parse(vcard_string)
@@ -19,21 +24,41 @@ module Vcard
       n_parts = extract_value(lines, "N")&.split(";") || []
       last_name = n_parts[0]&.presence
       first_name = n_parts[1]&.presence
+      middle_name = n_parts[2]&.presence
+      name_prefix = n_parts[3]&.presence
+      name_suffix = n_parts[4]&.presence
+
       emails = extract_typed_values(lines, "EMAIL", group_labels)
       phones = extract_typed_values(lines, "TEL", group_labels)
 
-      # Fallback display name when FN is missing
       if full_name.blank?
         full_name = [first_name, last_name].compact.join(" ").presence ||
                     emails.first&.dig(:value) ||
                     phones.first&.dig(:value) ||
                     extract_value(lines, "ORG")
       end
+
       organization = extract_value(lines, "ORG")
       title = extract_value(lines, "TITLE")
+      role = extract_value(lines, "ROLE")
       note = extract_value(lines, "NOTE")
       uid = extract_value(lines, "UID")
       version = extract_value(lines, "VERSION")
+      nickname = extract_value(lines, "NICKNAME")
+      gender = extract_value(lines, "GENDER")
+      pronouns = extract_value(lines, "PRONOUNS")
+      geo = extract_value(lines, "GEO")
+      rev = extract_value(lines, "REV")
+      prodid = extract_value(lines, "PRODID")
+      phonetic_first_name = extract_value(lines, "X-PHONETIC-FIRST-NAME")
+      phonetic_last_name = extract_value(lines, "X-PHONETIC-LAST-NAME")
+
+      logo_raw = extract_value(lines, "LOGO")
+      logo = logo_raw&.match?(%r{\Ahttps?://}i) ? logo_raw : nil
+
+      sound_raw = extract_value(lines, "SOUND")
+      sound = sound_raw&.match?(%r{\Ahttps?://}i) ? sound_raw : nil
+
       photo_data, photo_type = extract_photo(lines)
       addresses = extract_typed_values(lines, "ADR", group_labels).map do |addr|
         parts = addr[:value].split(";")
@@ -47,6 +72,8 @@ module Vcard
         }.compact
       end
       urls = extract_typed_values(lines, "URL", group_labels)
+      impp = extract_typed_values(lines, "IMPP", group_labels)
+      social_profiles = extract_typed_values(lines, "X-SOCIALPROFILE", group_labels)
       birthday = extract_value(lines, "BDAY")
       anniversary = extract_value(lines, "ANNIVERSARY")
       dates = extract_typed_values(lines, "X-ABDATE", group_labels)
@@ -59,10 +86,19 @@ module Vcard
         full_name: full_name,
         first_name: first_name,
         last_name: last_name,
+        middle_name: middle_name,
+        name_prefix: name_prefix,
+        name_suffix: name_suffix,
+        nickname: nickname,
+        pronouns: pronouns,
+        gender: gender,
         emails: emails,
         phones: phones,
+        impp: impp,
+        social_profiles: social_profiles,
         organization: organization,
         title: title,
+        role: role,
         note: note,
         photo_data: photo_data,
         photo_type: photo_type,
@@ -76,7 +112,14 @@ module Vcard
         related: related,
         categories: categories,
         kind: kind,
-        member_uids: member_uids
+        member_uids: member_uids,
+        phonetic_first_name: phonetic_first_name,
+        phonetic_last_name: phonetic_last_name,
+        geo: geo,
+        logo: logo,
+        sound: sound,
+        rev: rev,
+        prodid: prodid
       )
     end
 
@@ -97,9 +140,16 @@ module Vcard
         fn = params[:full_name].presence
         first = params[:first_name].presence || ""
         last = params[:last_name].presence || ""
-        fn ||= [first, last].reject(&:empty?).join(" ")
+        middle = params[:middle_name].presence || ""
+        prefix = params[:name_prefix].presence || ""
+        suffix = params[:name_suffix].presence || ""
+        fn ||= [prefix, first, middle, last, suffix].reject(&:empty?).join(" ")
         lines << "FN:#{fn}"
-        lines << "N:#{last};#{first};;;"
+        lines << "N:#{last};#{first};#{middle};#{prefix};#{suffix}"
+
+        lines << "NICKNAME:#{params[:nickname]}" if params[:nickname].present?
+        lines << "PRONOUNS:#{params[:pronouns]}" if params[:pronouns].present?
+        lines << "GENDER:#{params[:gender]}" if params[:gender].present?
 
         Array(params[:emails]).each do |email|
           next if email.blank?
@@ -111,9 +161,53 @@ module Vcard
           lines << "TEL:#{phone}"
         end
 
+        Array(params[:impp]).each do |im|
+          next unless im.is_a?(Hash) || im.respond_to?(:to_h)
+          im = im.to_h.symbolize_keys if im.respond_to?(:to_h)
+          value = im[:value].presence
+          next unless value
+          type = im[:type].presence
+          lines << (type ? "IMPP;TYPE=#{type}:#{value}" : "IMPP:#{value}")
+        end
+
         lines << "ORG:#{params[:organization]}" if params[:organization].present?
         lines << "TITLE:#{params[:title]}" if params[:title].present?
+        lines << "ROLE:#{params[:role]}" if params[:role].present?
         lines << "NOTE:#{params[:note]}" if params[:note].present?
+
+        lines << "BDAY:#{params[:birthday]}" if params[:birthday].present?
+        lines << "ANNIVERSARY:#{params[:anniversary]}" if params[:anniversary].present?
+
+        Array(params[:urls]).each do |url|
+          next if url.blank?
+          lines << "URL:#{url}"
+        end
+
+        Array(params[:addresses]).each do |addr|
+          next unless addr.is_a?(Hash) || addr.respond_to?(:to_h)
+          addr = addr.to_h.symbolize_keys if addr.respond_to?(:to_h)
+          street = addr[:street].presence || ""
+          city = addr[:city].presence || ""
+          state = addr[:state].presence || ""
+          zip = addr[:zip].presence || ""
+          country = addr[:country].presence || ""
+          next if [street, city, state, zip, country].all?(&:blank?)
+          type = addr[:type].presence || "HOME"
+          lines << "ADR;TYPE=#{type}:;;#{street};#{city};#{state};#{zip};#{country}"
+        end
+
+        Array(params[:social_profiles]).each do |sp|
+          next unless sp.is_a?(Hash) || sp.respond_to?(:to_h)
+          sp = sp.to_h.symbolize_keys if sp.respond_to?(:to_h)
+          value = sp[:value].presence
+          next unless value
+          type = sp[:type].presence
+          lines << (type ? "X-SOCIALPROFILE;TYPE=#{type}:#{value}" : "X-SOCIALPROFILE:#{value}")
+        end
+
+        if params[:photo_url].present?
+          lines << "PHOTO;VALUE=uri:#{params[:photo_url]}"
+        end
 
         categories = Array(params[:categories]).reject(&:blank?)
         if categories.any?
@@ -207,14 +301,11 @@ module Vcard
     end
 
     def self.resolve_type(line, group, group_labels)
-      # Try TYPE= param first
       if (tm = line.match(/TYPE=([^;:,]+)/i))
         type = tm[1]
-        # vCard 2.1 custom types: X-Gggg → Gggg
         type = type.sub(/\AX-/i, "") if type.match?(/\AX-.+/i)
         return type
       end
-      # Try group label (item1.X-ABLABEL)
       return group_labels[group] if group && group_labels[group]
       nil
     end
@@ -236,7 +327,6 @@ module Vcard
       lines.each do |line|
         next unless line.match?(re)
         value = line.sub(re, "").strip
-        # Split on unescaped commas (commas not preceded by backslash)
         cats = value.split(/(?<!\\),/).map { |c| c.gsub("\\,", ",").strip }
         all_categories.concat(cats)
       end
@@ -244,7 +334,6 @@ module Vcard
     end
 
     def self.extract_kind(lines)
-      # Check KIND property first, then Apple's X-ADDRESSBOOKSERVER-KIND
       re_kind = PROP_RE.call("KIND")
       re_apple = PROP_RE.call("X-ADDRESSBOOKSERVER-KIND")
       lines.each do |line|

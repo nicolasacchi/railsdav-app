@@ -1,15 +1,23 @@
+require_relative "content_classifier"
+
 module E2ee
   module Detection
     BOOTSTRAP_UID = "system-bootstrap@e2e-carddav".freeze
 
+    def self.classifier
+      @classifier ||= ContentClassifier.new
+    end
+
+    def self.classify(data)
+      classifier.classify(data)
+    end
+
     def self.encrypted?(data)
-      return false if data.nil? || data.empty?
-      !data.b.start_with?("BEGIN:VCARD")
+      classifier.encrypted?(data)
     end
 
     def self.bootstrap_vcard?(data)
-      return false if encrypted?(data)
-      data.include?("UID:#{BOOTSTRAP_UID}")
+      classifier.bootstrap?(data)
     end
   end
 end

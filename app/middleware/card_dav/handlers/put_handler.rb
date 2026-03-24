@@ -1,3 +1,5 @@
+require "e2ee/detection"
+
 module CardDav
   module Handlers
     class PutHandler
@@ -13,7 +15,11 @@ module CardDav
         return bad_request("Request body required") unless context.body
         return text_response(413, "Request body too large") if context.body.bytesize > 1_048_576
 
-        if context.content_type && !context.content_type.match?(%r{text/vcard|text/x-vcard}i)
+        vcard_data = context.body
+        is_encrypted = E2ee::Detection.encrypted?(vcard_data)
+
+        # Content-Type validation only for plaintext vCards
+        if !is_encrypted && context.content_type && !context.content_type.match?(%r{text/vcard|text/x-vcard}i)
           return text_response(415, "Unsupported Media Type: expected text/vcard")
         end
 
@@ -21,8 +27,12 @@ module CardDav
           return text_response(409, "Conflict: cannot PUT to a collection")
         end
 
-        vcard_data = context.body
-        uid = extract_uid(vcard_data)
+        # UID resolution: header → URI-derived → regex extraction (plaintext only)
+        uid = if is_encrypted
+          context.e2ee_uid || context.contact_uri&.sub(/\.vcf\z/i, "")
+        else
+          extract_uid(vcard_data)
+        end
         return bad_request("vCard must contain a UID property") unless uid
 
         addressbook = find_addressbook(context)
@@ -31,9 +41,9 @@ module CardDav
         existing = find_contact(addressbook, context)
 
         if existing
-          update_contact(context, addressbook, existing, vcard_data)
+          update_contact(context, addressbook, existing, vcard_data, encrypted: is_encrypted)
         else
-          create_contact(context, addressbook, vcard_data)
+          create_contact(context, addressbook, vcard_data, uid: uid, encrypted: is_encrypted)
         end
       end
 
@@ -47,7 +57,7 @@ module CardDav
         nil
       end
 
-      def update_contact(context, addressbook, contact, vcard_data)
+      def update_contact(context, addressbook, contact, vcard_data, encrypted: false)
         if context.if_none_match == ["*"]
           return precondition_failed
         end
@@ -57,30 +67,38 @@ module CardDav
         end
 
         ActiveRecord::Base.transaction do
-          contact.update!(vcard_data: vcard_data)
+          contact.encrypted = encrypted
+          contact.vcard_data = vcard_data
+          contact.save!
           addressbook.record_sync_change!(uri: contact.uri, change_type: "modified")
+          addressbook.update_encryption_status! if encrypted || contact.bootstrap_vcard?
         end
 
         empty_response(204, { "ETag" => contact.etag })
       end
 
-      def create_contact(context, addressbook, vcard_data)
+      def create_contact(context, addressbook, vcard_data, uid:, encrypted: false)
         if context.if_match
           return precondition_failed
         end
 
-        uid = extract_uid(vcard_data)
-        if uid && addressbook.contacts.exists?(uid: uid)
+        if addressbook.contacts.exists?(uid: uid)
           return text_response(409, "Conflict: a contact with this UID already exists in this addressbook")
         end
 
+        is_bootstrap = !encrypted && E2ee::Detection.bootstrap_vcard?(vcard_data)
+
         contact = nil
         ActiveRecord::Base.transaction do
-          contact = addressbook.contacts.create!(
+          contact = addressbook.contacts.new(
             uri: context.contact_uri,
-            vcard_data: vcard_data
+            uid: uid,
+            encrypted: encrypted
           )
+          contact.vcard_data = vcard_data
+          contact.save!
           addressbook.record_sync_change!(uri: contact.uri, change_type: "created")
+          addressbook.update_encryption_status! if encrypted || is_bootstrap
         end
 
         empty_response(201, { "ETag" => contact.etag })

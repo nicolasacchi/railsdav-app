@@ -36,6 +36,17 @@ class Addressbook < ApplicationRecord
     sync_changes.create!(uri: uri, sync_token: sync_token, change_type: change_type)
   end
 
+  def update_encryption_status!
+    has_bootstrap = contacts.exists?(uid: E2ee::Detection::BOOTSTRAP_UID)
+    has_encrypted = contacts.where(encrypted: true).exists?
+
+    if has_bootstrap || has_encrypted
+      update!(encryption_enabled: true) unless encryption_enabled?
+    else
+      update!(encryption_enabled: false) if encryption_enabled?
+    end
+  end
+
   def sync_token_url
     host = Railsdav.site_url || "localhost"
     "http://#{host}/ns/sync/#{sync_token}"

@@ -42,12 +42,12 @@ module DavHelpers
     process(:options, path, headers: headers)
   end
 
-  def dav_put(path, body:, user: nil, password: nil, content_type: "text/vcard; charset=utf-8", if_match: nil, if_none_match: nil)
-    headers = { "CONTENT_TYPE" => content_type }
-    headers.merge!(basic_auth_header(user.username, password || DAV_TEST_PASSWORD)) if user
-    headers["HTTP_IF_MATCH"] = if_match if if_match
-    headers["HTTP_IF_NONE_MATCH"] = if_none_match if if_none_match
-    process(:put, path, headers: headers, params: body)
+  def dav_put(path, body:, user: nil, password: nil, content_type: "text/vcard; charset=utf-8", if_match: nil, if_none_match: nil, headers: {})
+    h = { "CONTENT_TYPE" => content_type }.merge(headers)
+    h.merge!(basic_auth_header(user.username, password || DAV_TEST_PASSWORD)) if user
+    h["HTTP_IF_MATCH"] = if_match if if_match
+    h["HTTP_IF_NONE_MATCH"] = if_none_match if if_none_match
+    process(:put, path, headers: h, params: body)
   end
 
   def dav_get(path, user: nil, password: nil, if_none_match: nil)

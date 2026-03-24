@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_23_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_23_000003) do
   create_table "addressbook_shares", force: :cascade do |t|
     t.integer "addressbook_id", null: false
     t.datetime "created_at", null: false
@@ -37,6 +37,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_000001) do
     t.string "dav_password_digest"
     t.text "description"
     t.string "displayname", default: "Contacts", null: false
+    t.boolean "encryption_enabled", default: false, null: false
+    t.string "encryption_version"
     t.integer "sync_token", default: 0, null: false
     t.datetime "updated_at", null: false
     t.string "uri", null: false
@@ -70,6 +72,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_000001) do
     t.integer "addressbook_id", null: false
     t.string "cached_display_name", default: ""
     t.datetime "created_at", null: false
+    t.boolean "encrypted", default: false, null: false
+    t.string "encryption_version"
     t.string "etag", null: false
     t.string "kind", default: "individual", null: false
     t.string "uid", null: false
@@ -77,6 +81,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_000001) do
     t.string "uri", null: false
     t.text "vcard_data", null: false
     t.index ["addressbook_id", "cached_display_name"], name: "index_contacts_on_addressbook_id_and_cached_display_name"
+    t.index ["addressbook_id", "encrypted"], name: "index_contacts_on_addressbook_id_and_encrypted"
     t.index ["addressbook_id", "uid"], name: "index_contacts_on_addressbook_id_and_uid", unique: true
     t.index ["addressbook_id", "uri"], name: "index_contacts_on_addressbook_id_and_uri", unique: true
     t.index ["addressbook_id"], name: "index_contacts_on_addressbook_id"

@@ -1,3 +1,5 @@
+require "e2ee/detection"
+
 class Contact < ApplicationRecord
   belongs_to :addressbook
   has_many :contact_group_memberships, dependent: :destroy
@@ -12,32 +14,66 @@ class Contact < ApplicationRecord
   scope :individuals, -> { where(kind: "individual") }
   scope :group_vcards, -> { where(kind: "group") }
   scope :display_order, -> { order(Arel.sql("CASE WHEN cached_display_name = '' THEN 1 ELSE 0 END, LOWER(cached_display_name)")) }
+  scope :encrypted, -> { where(encrypted: true) }
+  scope :unencrypted, -> { where(encrypted: false) }
+  scope :non_bootstrap, -> { where.not(uid: E2ee::Detection::BOOTSTRAP_UID) }
 
   before_validation :compute_etag, if: -> { vcard_data.present? && vcard_data_changed? }
-  before_validation :extract_uid, if: -> { vcard_data.present? && vcard_data_changed? }
+  before_validation :extract_uid, if: -> { vcard_data.present? && vcard_data_changed? && !encrypted? }
   before_validation :cache_display_name, if: -> { vcard_data.present? && vcard_data_changed? }
-  after_save :sync_groups_from_vcard, if: -> { saved_change_to_vcard_data? }
+  after_save :sync_groups_from_vcard, if: -> { saved_change_to_vcard_data? && !encrypted? && !bootstrap_vcard? }
+
+  def bootstrap_vcard?
+    uid == E2ee::Detection::BOOTSTRAP_UID
+  end
+
+  # Base64 encode/decode for encrypted binary storage in text column
+  def vcard_data
+    raw = read_attribute(:vcard_data)
+    return raw unless encrypted? && raw.present? && !raw.start_with?("BEGIN:VCARD")
+    Base64.strict_decode64(raw)
+  rescue ArgumentError
+    raw
+  end
+
+  def vcard_data=(val)
+    if encrypted? && val.present? && !val.b.start_with?("BEGIN:VCARD")
+      write_attribute(:vcard_data, Base64.strict_encode64(val))
+    else
+      write_attribute(:vcard_data, val)
+    end
+  end
+
+  # Read raw stored value (Base64 for encrypted) for ETag computation
+  def raw_vcard_data
+    read_attribute(:vcard_data)
+  end
 
   private
 
   def compute_etag
-    self.etag = "\"#{Digest::SHA256.hexdigest(vcard_data)}\""
+    self.etag = "\"#{Digest::SHA256.hexdigest(raw_vcard_data)}\""
   end
 
   def extract_uid
-    if (match = vcard_data.match(/^UID(?:;[^:]*)?:(.+)$/i))
+    if (match = raw_vcard_data.match(/^UID(?:;[^:]*)?:(.+)$/i))
       self.uid = match[1].strip
     end
   end
 
   def cache_display_name
-    parsed = Vcard::Parser.parse(vcard_data)
-    self.cached_display_name = parsed&.full_name.presence || ""
-    self.kind = parsed&.kind || "individual"
+    if encrypted?
+      self.cached_display_name = "[Encrypted]"
+      self.kind = "individual"
+    else
+      parsed = Vcard::Parser.parse(raw_vcard_data)
+      self.cached_display_name = parsed&.full_name.presence || ""
+      self.kind = parsed&.kind || "individual"
+    end
   end
 
   def sync_groups_from_vcard
-    parsed = Vcard::Parser.parse(vcard_data)
+    parsed = Vcard::Parser.parse(raw_vcard_data)
     return unless parsed
 
     if kind == "group"

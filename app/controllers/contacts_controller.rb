@@ -22,7 +22,7 @@ class ContactsController < ApplicationController
     end
 
     addressbook_ids = addressbooks_to_show.map(&:id)
-    scope = Contact.individuals.where(addressbook_id: addressbook_ids).display_order
+    scope = Contact.individuals.non_bootstrap.where(addressbook_id: addressbook_ids).display_order
 
     # Group filtering
     @groups = ContactGroup.where(addressbook_id: addressbook_ids).ordered
@@ -37,7 +37,8 @@ class ContactsController < ApplicationController
 
     ab_lookup = addressbooks_to_show.index_by(&:id)
     @parsed_contacts = contacts.map do |c|
-      { contact: c, display: Vcard::Parser.parse(c.vcard_data), addressbook: ab_lookup[c.addressbook_id] }
+      display = c.encrypted? ? nil : Vcard::Parser.parse(c.vcard_data)
+      { contact: c, display: display, addressbook: ab_lookup[c.addressbook_id] }
     end
 
     @grouped_contacts = @parsed_contacts.group_by do |item|
@@ -47,7 +48,7 @@ class ContactsController < ApplicationController
   end
 
   def show
-    @display = Vcard::Parser.parse(@contact.vcard_data)
+    @display = @contact.encrypted? ? nil : Vcard::Parser.parse(@contact.vcard_data)
   end
 
   def new
@@ -83,6 +84,10 @@ class ContactsController < ApplicationController
   end
 
   def edit
+    if @contact.encrypted?
+      return redirect_to addressbook_contact_path(@addressbook.uri, @contact.uri),
+                         alert: "Encrypted contacts can only be edited from the encrypting client."
+    end
     @display = Vcard::Parser.parse(@contact.vcard_data)
     @groups = @addressbook.contact_groups.ordered
   end
@@ -121,6 +126,12 @@ class ContactsController < ApplicationController
   end
 
   def export
+    if @contact.encrypted?
+      send_data @contact.vcard_data, filename: @contact.uri,
+                type: "application/octet-stream", disposition: "attachment"
+      return
+    end
+
     case params[:export_format]&.downcase
     when "vcf"
       send_data @contact.vcard_data, filename: @contact.uri, type: "text/vcard"

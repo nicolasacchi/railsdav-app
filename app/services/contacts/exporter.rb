@@ -6,7 +6,8 @@ module Contacts
     CSV_HEADERS = %w[uid full_name first_name last_name email_1 email_2 email_3 phone_1 phone_2 phone_3 organization title note categories].freeze
 
     def self.to_vcf(contacts)
-      contacts.select { |c| c.kind == "individual" }.map(&:vcard_data).join("\r\n")
+      contacts.select { |c| (c.kind == "individual" || c.encrypted?) && !c.bootstrap_vcard? }
+              .map(&:vcard_data).join("\r\n")
     end
 
     def self.to_csv(contacts)
@@ -15,6 +16,7 @@ module Contacts
         csv << CSV_HEADERS
         contacts.each do |contact|
           next unless contact.kind == "individual"
+          next if contact.encrypted?
           d = Vcard::Parser.parse(contact.vcard_data)
           next unless d
 
@@ -44,6 +46,7 @@ module Contacts
     def self.to_json(contacts)
       data = contacts.filter_map do |contact|
         next unless contact.kind == "individual"
+        next if contact.encrypted?
         d = Vcard::Parser.parse(contact.vcard_data)
         next unless d
 

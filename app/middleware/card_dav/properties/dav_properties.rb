@@ -18,7 +18,12 @@ module CardDav
         when "getetag"
           resource_type == :contact ? { found: true, value: resource.etag } : { found: false }
         when "getcontenttype"
-          resource_type == :contact ? { found: true, value: "text/vcard; charset=utf-8" } : { found: false }
+          if resource_type == :contact
+            ct = resource.encrypted? ? "application/octet-stream" : "text/vcard; charset=utf-8"
+            { found: true, value: ct }
+          else
+            { found: false }
+          end
         when "getcontentlength"
           resource_type == :contact ? { found: true, value: resource.vcard_data.bytesize.to_s } : { found: false }
         when "getlastmodified"

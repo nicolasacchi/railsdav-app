@@ -19,8 +19,9 @@ module CardDav
           return empty_response(304, { "ETag" => contact.etag })
         end
 
+        content_type = contact.encrypted? ? "application/octet-stream" : "text/vcard; charset=utf-8"
         headers = {
-          "Content-Type" => "text/vcard; charset=utf-8",
+          "Content-Type" => content_type,
           "Content-Length" => contact.vcard_data.bytesize.to_s,
           "ETag" => contact.etag
         }

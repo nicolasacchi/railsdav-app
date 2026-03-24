@@ -74,8 +74,8 @@ RSpec.describe Contact, type: :model do
       create(:contact, addressbook: addressbook, uid: "ind-1", uri: "ind.vcf")
       group_vcard = "BEGIN:VCARD\r\nVERSION:3.0\r\nUID:grp-1\r\nKIND:group\r\nFN:Family\r\nN:Family;;;;\r\nEND:VCARD\r\n"
       create(:contact, addressbook: addressbook, uid: "grp-1", uri: "grp.vcf", vcard_data: group_vcard)
-      expect(Contact.individuals.count).to eq(1)
-      expect(Contact.group_vcards.count).to eq(1)
+      expect(addressbook.contacts.individuals.count).to eq(1)
+      expect(addressbook.contacts.group_vcards.count).to eq(1)
     end
   end
 

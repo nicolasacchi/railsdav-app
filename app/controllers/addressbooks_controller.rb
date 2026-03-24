@@ -6,11 +6,14 @@ class AddressbooksController < ApplicationController
   end
 
   def show
-    scope = @addressbook.contacts.display_order
+    scope = @addressbook.contacts.non_bootstrap.display_order
     @pagy, contacts = pagy(scope)
     @parsed_contacts = contacts.map do |c|
-      { contact: c, display: Vcard::Parser.parse(c.vcard_data) }
+      display = c.encrypted? ? nil : Vcard::Parser.parse(c.vcard_data)
+      { contact: c, display: display }
     end
+    @encryption_enabled = @addressbook.encryption_enabled?
+    @encrypted_count = @addressbook.contacts.encrypted.count
   end
 
   def new
@@ -43,14 +46,14 @@ class AddressbooksController < ApplicationController
   end
 
   def export
-    contacts = @addressbook.contacts.order(:uri)
+    contacts = @addressbook.contacts.non_bootstrap.order(:uri)
     case params[:export_format]&.downcase
     when "vcf"
       send_data Contacts::Exporter.to_vcf(contacts), filename: "#{@addressbook.uri}.vcf", type: "text/vcard"
     when "csv"
-      send_data Contacts::Exporter.to_csv(contacts), filename: "#{@addressbook.uri}.csv", type: "text/csv"
+      send_data Contacts::Exporter.to_csv(contacts.unencrypted), filename: "#{@addressbook.uri}.csv", type: "text/csv"
     when "json"
-      send_data Contacts::Exporter.to_json(contacts), filename: "#{@addressbook.uri}.json", type: "application/json"
+      send_data Contacts::Exporter.to_json(contacts.unencrypted), filename: "#{@addressbook.uri}.json", type: "application/json"
     else
       redirect_to addressbook_path(@addressbook.uri), alert: "Unknown export format."
     end

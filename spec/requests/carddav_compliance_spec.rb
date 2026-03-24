@@ -47,8 +47,8 @@ RSpec.describe "CardDAV Compliance (CalDAVTester + sabre/dav patterns)", type: :
       expect(response).to have_http_status(409)
     end
 
-    it "returns 400 for non-vCard content (no UID)" do
-      dav_put "#{base}/bad.vcf", body: "This is not a vCard at all", user: user
+    it "returns 400 for plaintext vCard without UID" do
+      dav_put "#{base}/bad.vcf", body: "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:No UID\r\nEND:VCARD\r\n", user: user
       expect(response).to have_http_status(400)
     end
   end

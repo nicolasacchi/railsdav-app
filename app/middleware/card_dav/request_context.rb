@@ -3,7 +3,7 @@ require "cgi"
 module CardDav
   class RequestContext
     attr_reader :env, :method, :path, :depth, :body, :content_type,
-                :if_match, :if_none_match
+                :if_match, :if_none_match, :e2ee_uid
     attr_accessor :user, :share, :shared_addressbook, :public_token
     attr_writer :path_segments, :resource_type
 
@@ -15,6 +15,7 @@ module CardDav
       @content_type = env["CONTENT_TYPE"]
       @if_match = parse_etag_header(env["HTTP_IF_MATCH"])
       @if_none_match = parse_etag_header(env["HTTP_IF_NONE_MATCH"])
+      @e2ee_uid = env["HTTP_X_E2EE_UID"]&.strip
       @body = read_body(env)
     end
 
@@ -84,7 +85,10 @@ module CardDav
       data = input.read
       input.rewind
       return nil if data.empty?
-      data.force_encoding("UTF-8") if data.encoding == Encoding::ASCII_8BIT
+      # Only force UTF-8 for plaintext vCards; leave encrypted binary as-is
+      if data.encoding == Encoding::ASCII_8BIT && data.b.start_with?("BEGIN:VCARD".b)
+        data.force_encoding("UTF-8")
+      end
       data
     end
   end

@@ -33,10 +33,15 @@ module CardDav
           return precondition_failed
         end
 
+        was_encrypted = contact.encrypted?
+        was_bootstrap = contact.bootstrap_vcard?
+
         ActiveRecord::Base.transaction do
           contact.destroy!
           addressbook.record_sync_change!(uri: context.contact_uri, change_type: "deleted")
         end
+
+        addressbook.update_encryption_status! if was_encrypted || was_bootstrap
 
         empty_response(204)
       end

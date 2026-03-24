@@ -127,7 +127,8 @@ module CardDav
       end
 
       def filter_contacts(addressbook, filter)
-        contacts = addressbook.contacts.to_a
+        # Encrypted contacts cannot be searched by content
+        contacts = addressbook.contacts.where(encrypted: false).to_a
 
         filter[:prop_filters].each do |pf|
           if pf[:is_not_defined]

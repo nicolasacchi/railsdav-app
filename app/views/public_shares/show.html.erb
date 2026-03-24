@@ -15,12 +15,16 @@
           <% display = @displays[i] %>
           <li class="contact-item">
             <div>
-              <div class="contact-name"><%= display&.full_name || contact.uri %></div>
-              <% if display&.emails&.any? %>
-                <div class="contact-meta"><%= display.emails.first[:value] %></div>
+              <% if contact.encrypted? %>
+                <div class="contact-name">[Encrypted Contact]</div>
+              <% else %>
+                <div class="contact-name"><%= display&.full_name || contact.uri %></div>
+                <% if display&.emails&.any? %>
+                  <div class="contact-meta"><%= display.emails.first[:value] %></div>
+                <% end %>
               <% end %>
             </div>
-            <% if display&.phones&.any? %>
+            <% if !contact.encrypted? && display&.phones&.any? %>
               <span class="contact-meta"><%= display.phones.first[:value] %></span>
             <% end %>
           </li>

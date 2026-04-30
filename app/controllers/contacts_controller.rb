@@ -69,10 +69,9 @@ class ContactsController < ApplicationController
       vcard_data = Vcard::Parser.update_categories(vcard_data, group_names) if group_names.any?
     end
 
-    @contact = @addressbook.contacts.new(
-      uri: generate_uri,
-      vcard_data: vcard_data
-    )
+    new_attrs = { uri: generate_uri, vcard_data: vcard_data }
+    new_attrs[:call_screening_policy] = screening_policy_param if owner_of_addressbook?
+    @contact = @addressbook.contacts.new(new_attrs)
 
     if @contact.save
       @addressbook.record_sync_change!(uri: @contact.uri, change_type: "created")
@@ -108,7 +107,10 @@ class ContactsController < ApplicationController
       vcard_data = Vcard::Parser.update_categories(vcard_data, [])
     end
 
-    if @contact.update(vcard_data: vcard_data)
+    update_attrs = { vcard_data: vcard_data }
+    update_attrs[:call_screening_policy] = screening_policy_param if owner_of_addressbook?
+
+    if @contact.update(update_attrs)
       @addressbook.record_sync_change!(uri: @contact.uri, change_type: "modified")
       redirect_to addressbook_contact_path(@addressbook.uri, @contact.uri), notice: "Contact updated."
     else
@@ -170,6 +172,16 @@ class ContactsController < ApplicationController
 
   def generate_uri
     "#{SecureRandom.uuid}.vcf"
+  end
+
+  def owner_of_addressbook?
+    @addressbook&.user_id == current_user&.id
+  end
+
+  def screening_policy_param
+    raw = params[:call_screening_policy].to_s
+    return nil if raw.blank? || raw == "inherit"
+    Addressbook::CALL_SCREENING_POLICIES.include?(raw) ? raw : nil
   end
 
   def force_html_format

@@ -124,4 +124,114 @@ RSpec.describe Contact, type: :model do
       expect(group.contacts).to include(member)
     end
   end
+
+  describe "phone number sync" do
+    let(:vcard_with_phones) do
+      "BEGIN:VCARD\r\nVERSION:3.0\r\nUID:phone-1\r\nFN:Phone Test\r\nN:Test;Phone;;;\r\nTEL;TYPE=CELL:+393331234567\r\nTEL;TYPE=HOME:+390591234567\r\nEND:VCARD\r\n"
+    end
+
+    it "creates ContactPhoneNumber rows on save" do
+      contact = Contact.create!(addressbook: addressbook, uri: "phones-1.vcf", vcard_data: vcard_with_phones)
+      e164s = contact.contact_phone_numbers.pluck(:e164).sort
+      expect(e164s).to eq(["+390591234567", "+393331234567"])
+    end
+
+    it "stores the phone type" do
+      contact = Contact.create!(addressbook: addressbook, uri: "phones-2.vcf", vcard_data: vcard_with_phones)
+      cell = contact.contact_phone_numbers.find_by(e164: "+393331234567")
+      expect(cell.phone_type&.upcase).to include("CELL")
+    end
+
+    it "replaces phones when vCard changes" do
+      contact = Contact.create!(addressbook: addressbook, uri: "phones-3.vcf", vcard_data: vcard_with_phones)
+      expect(contact.contact_phone_numbers.count).to eq(2)
+
+      new_vcard = "BEGIN:VCARD\r\nVERSION:3.0\r\nUID:phone-1\r\nFN:Phone Test\r\nN:Test;Phone;;;\r\nTEL:+393331234567\r\nEND:VCARD\r\n"
+      contact.update!(vcard_data: new_vcard)
+      expect(contact.contact_phone_numbers.pluck(:e164)).to eq(["+393331234567"])
+    end
+
+    it "skips invalid phone numbers" do
+      vcard = "BEGIN:VCARD\r\nVERSION:3.0\r\nUID:invalid-phone\r\nFN:Bad\r\nN:Bad;;;;\r\nTEL:not-a-phone\r\nTEL:+393331234567\r\nEND:VCARD\r\n"
+      contact = Contact.create!(addressbook: addressbook, uri: "phones-bad.vcf", vcard_data: vcard)
+      expect(contact.contact_phone_numbers.pluck(:e164)).to eq(["+393331234567"])
+    end
+
+    it "skips encrypted contacts" do
+      contact = Contact.create!(
+        addressbook: addressbook,
+        uri: "enc-phones.vcf",
+        uid: "enc-uid-x",
+        encrypted: true,
+        vcard_data: Base64.strict_encode64("ciphertext"),
+        etag: "\"e\""
+      )
+      expect(contact.contact_phone_numbers).to be_empty
+    end
+
+    it "enforces a compound unique index on (contact_id, e164)" do
+      contact = Contact.create!(addressbook: addressbook, uri: "uniq.vcf", vcard_data: vcard_with_phones)
+      expect {
+        contact.contact_phone_numbers.create!(e164: "+393331234567")
+      }.to raise_error(ActiveRecord::RecordNotUnique)
+    end
+
+    it "cascades deletion at the FK level" do
+      contact = Contact.create!(addressbook: addressbook, uri: "casc.vcf", vcard_data: vcard_with_phones)
+      ContactPhoneNumber.connection.execute("DELETE FROM contacts WHERE id = #{contact.id}")
+      expect(ContactPhoneNumber.where(contact_id: contact.id)).to be_empty
+    end
+  end
+
+  describe "encrypted contacts and screening policy" do
+    it "rejects call_screening_policy on encrypted contacts" do
+      contact = Contact.new(
+        addressbook: addressbook,
+        uri: "enc-pol.vcf",
+        uid: "enc-pol",
+        encrypted: true,
+        vcard_data: Base64.strict_encode64("ciphertext"),
+        etag: "\"e\"",
+        call_screening_policy: "block"
+      )
+      expect(contact).not_to be_valid
+      expect(contact.errors[:call_screening_policy]).to include(/encrypted contacts/)
+    end
+
+    it "allows nil policy on encrypted contacts" do
+      contact = Contact.new(
+        addressbook: addressbook,
+        uri: "enc-ok.vcf",
+        uid: "enc-ok",
+        encrypted: true,
+        vcard_data: Base64.strict_encode64("ciphertext"),
+        etag: "\"e\"",
+        call_screening_policy: nil
+      )
+      expect(contact).to be_valid
+    end
+  end
+
+  describe "#effective_screening_policy" do
+    it "returns own policy when set" do
+      ab = create(:addressbook, user: user, call_screening_policy: "screen")
+      contact = Contact.create!(
+        addressbook: ab,
+        uri: "p.vcf",
+        vcard_data: "BEGIN:VCARD\r\nVERSION:3.0\r\nUID:p\r\nFN:P\r\nEND:VCARD\r\n",
+        call_screening_policy: "block"
+      )
+      expect(contact.effective_screening_policy).to eq("block")
+    end
+
+    it "inherits from addressbook when own policy is nil" do
+      ab = create(:addressbook, user: user, call_screening_policy: "allow")
+      contact = Contact.create!(
+        addressbook: ab,
+        uri: "p2.vcf",
+        vcard_data: "BEGIN:VCARD\r\nVERSION:3.0\r\nUID:p2\r\nFN:P2\r\nEND:VCARD\r\n"
+      )
+      expect(contact.effective_screening_policy).to eq("allow")
+    end
+  end
 end

@@ -160,6 +160,21 @@
     </div>
   <% end %>
 
+  <% if @addressbook.user_id == current_user.id %>
+    <div class="form-group">
+      <%= label_tag :call_screening_policy, "Call screening" %>
+      <%= select_tag :call_screening_policy, options_for_select([
+            ["Inherit from addressbook (#{@addressbook.call_screening_policy})", "inherit"],
+            ["Default screening", "screen"],
+            ["Auto-allow (skip spam check)", "allow"],
+            ["Auto-block (reject as spam)", "block"]
+          ], @contact.call_screening_policy.presence || "inherit") %>
+      <small style="display:block; color: var(--text-muted, #666); margin-top: 0.25rem;">
+        How an external call screener (e.g. callscreen) should handle inbound calls from this contact.
+      </small>
+    </div>
+  <% end %>
+
   <details style="margin-top: 1rem; margin-bottom: 1rem;">
     <summary>Edit raw vCard instead</summary>
     <div class="form-group" style="margin-top: 0.5rem;">

@@ -120,6 +120,18 @@
     </div>
   </details>
 
+  <% if @addressbook.user_id == current_user.id %>
+    <div class="form-group">
+      <%= label_tag :call_screening_policy, "Call screening" %>
+      <%= select_tag :call_screening_policy, options_for_select([
+            ["Inherit from addressbook (#{@addressbook.call_screening_policy})", "inherit"],
+            ["Default screening", "screen"],
+            ["Auto-allow (skip spam check)", "allow"],
+            ["Auto-block (reject as spam)", "block"]
+          ], "inherit") %>
+    </div>
+  <% end %>
+
   <% if @groups.any? %>
     <div class="form-group">
       <label>Groups</label>

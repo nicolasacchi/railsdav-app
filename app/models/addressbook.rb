@@ -1,4 +1,6 @@
 class Addressbook < ApplicationRecord
+  CALL_SCREENING_POLICIES = %w[screen allow block].freeze
+
   belongs_to :user
   has_many :contacts, dependent: :destroy
   has_many :sync_changes, dependent: :destroy
@@ -9,7 +11,9 @@ class Addressbook < ApplicationRecord
   validates :uri, presence: true,
                   uniqueness: { scope: :user_id },
                   format: { with: /\A[a-z0-9_-]+\z/i }
-  validates :displayname, presence: true
+  validates :displayname, presence: true, length: { maximum: 200 }
+  validates :description, length: { maximum: 1_000 }, allow_nil: true
+  validates :call_screening_policy, inclusion: { in: CALL_SCREENING_POLICIES }
 
   before_create :set_initial_dav_password
 

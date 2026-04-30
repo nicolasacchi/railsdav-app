@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_23_000003) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_30_141332) do
   create_table "addressbook_shares", force: :cascade do |t|
     t.integer "addressbook_id", null: false
     t.datetime "created_at", null: false
@@ -32,6 +32,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_000003) do
   end
 
   create_table "addressbooks", force: :cascade do |t|
+    t.string "call_screening_policy", default: "screen", null: false
     t.datetime "created_at", null: false
     t.integer "ctag", default: 0, null: false
     t.string "dav_password_digest"
@@ -68,9 +69,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_000003) do
     t.index ["group_contact_id"], name: "index_contact_groups_on_group_contact_id"
   end
 
+  create_table "contact_phone_numbers", force: :cascade do |t|
+    t.integer "contact_id", null: false
+    t.datetime "created_at", null: false
+    t.string "e164", null: false
+    t.string "phone_type"
+    t.string "raw"
+    t.datetime "updated_at", null: false
+    t.index ["contact_id", "e164"], name: "index_contact_phone_numbers_on_contact_id_and_e164", unique: true
+    t.index ["contact_id"], name: "index_contact_phone_numbers_on_contact_id"
+    t.index ["e164"], name: "index_contact_phone_numbers_on_e164"
+  end
+
   create_table "contacts", force: :cascade do |t|
     t.integer "addressbook_id", null: false
     t.string "cached_display_name", default: ""
+    t.string "call_screening_policy"
     t.datetime "created_at", null: false
     t.boolean "encrypted", default: false, null: false
     t.string "encryption_version"
@@ -116,6 +130,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_000003) do
   add_foreign_key "contact_group_memberships", "contacts"
   add_foreign_key "contact_groups", "addressbooks"
   add_foreign_key "contact_groups", "contacts", column: "group_contact_id"
+  add_foreign_key "contact_phone_numbers", "contacts", on_delete: :cascade
   add_foreign_key "contacts", "addressbooks"
   add_foreign_key "sync_changes", "addressbooks"
 end

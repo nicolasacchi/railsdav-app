@@ -37,6 +37,12 @@ Rails.application.routes.draw do
   # Health check
   get "up" => "rails/health#show", as: :rails_health_check
 
+  # Internal JSON API for trusted services on the same private network
+  # (e.g., callscreen for inbound-call contact lookups). Bearer-token auth.
+  namespace :api, defaults: { format: :json } do
+    get "contact_lookup", to: "contact_lookups#show"
+  end
+
   # All contacts view
   get "contacts", to: "contacts#index", as: :all_contacts
 

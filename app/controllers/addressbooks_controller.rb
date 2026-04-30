@@ -97,6 +97,6 @@ class AddressbooksController < ApplicationController
   end
 
   def addressbook_params
-    params.require(:addressbook).permit(:uri, :displayname, :description)
+    params.require(:addressbook).permit(:uri, :displayname, :description, :call_screening_policy)
   end
 end

@@ -4,12 +4,17 @@ class Contact < ApplicationRecord
   belongs_to :addressbook
   has_many :contact_group_memberships, dependent: :destroy
   has_many :contact_groups, through: :contact_group_memberships
+  has_many :contact_phone_numbers, dependent: :destroy
   has_one :owned_group, class_name: "ContactGroup", foreign_key: :group_contact_id, dependent: :nullify
 
   validates :uri, presence: true, uniqueness: { scope: :addressbook_id }
   validates :uid, presence: true
   validates :vcard_data, presence: true
   validates :etag, presence: true
+  validates :call_screening_policy,
+            inclusion: { in: Addressbook::CALL_SCREENING_POLICIES },
+            allow_nil: true
+  validate :call_screening_policy_blank_when_encrypted
 
   scope :individuals, -> { where(kind: "individual") }
   scope :group_vcards, -> { where(kind: "group") }
@@ -22,6 +27,11 @@ class Contact < ApplicationRecord
   before_validation :extract_uid, if: -> { vcard_data.present? && vcard_data_changed? && !encrypted? }
   before_validation :cache_display_name, if: -> { vcard_data.present? && vcard_data_changed? }
   after_save :sync_groups_from_vcard, if: -> { saved_change_to_vcard_data? && !encrypted? && !bootstrap_vcard? }
+  after_save :sync_phone_numbers, if: -> { saved_change_to_vcard_data? && !encrypted? && !bootstrap_vcard? }
+
+  def effective_screening_policy
+    call_screening_policy.presence || addressbook&.call_screening_policy || "screen"
+  end
 
   def bootstrap_vcard?
     uid == E2ee::Detection::BOOTSTRAP_UID
@@ -55,6 +65,11 @@ class Contact < ApplicationRecord
     self.etag = "\"#{Digest::SHA256.hexdigest(raw_vcard_data)}\""
   end
 
+  def call_screening_policy_blank_when_encrypted
+    return unless encrypted? && call_screening_policy.present?
+    errors.add(:call_screening_policy, "cannot be set on encrypted contacts")
+  end
+
   def extract_uid
     if (match = raw_vcard_data.match(/^UID(?:;[^:]*)?:(.+)$/i))
       self.uid = match[1].strip
@@ -67,7 +82,8 @@ class Contact < ApplicationRecord
       self.kind = "individual"
     else
       parsed = Vcard::Parser.parse(raw_vcard_data)
-      self.cached_display_name = parsed&.full_name.presence || ""
+      raw_name = (parsed&.full_name.presence || "").to_s
+      self.cached_display_name = raw_name.gsub(/[\r\n\x00-\x1F\x7F]/, "").strip.first(200)
       self.kind = parsed&.kind || "individual"
     end
   end
@@ -81,6 +97,29 @@ class Contact < ApplicationRecord
     else
       sync_categories(parsed)
     end
+  end
+
+  def sync_phone_numbers
+    parsed = Vcard::Parser.parse(raw_vcard_data)
+    raw_entries = Array(parsed&.phones)
+
+    default_country = ENV.fetch("PHONE_DEFAULT_COUNTRY", "IT")
+    rows = raw_entries.filter_map do |entry|
+      raw_value = entry.is_a?(Hash) ? entry[:value] : entry.to_s
+      next if raw_value.blank?
+
+      parsed_phone = Phonelib.parse(raw_value, default_country)
+      next unless parsed_phone.valid?
+
+      {
+        e164: parsed_phone.e164,
+        raw: raw_value,
+        phone_type: entry.is_a?(Hash) ? entry[:type] : nil
+      }
+    end.uniq { |row| row[:e164] }
+
+    contact_phone_numbers.delete_all
+    rows.each { |row| contact_phone_numbers.create!(row) }
   end
 
   def sync_group_vcard(parsed)

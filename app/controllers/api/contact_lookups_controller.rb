@@ -39,7 +39,22 @@ module Api
       end
     end
 
+    # Multi-tenant resolution: callscreen passes ?username=… to look up
+    # contacts in that tenant's address book. If absent, fall back to the
+    # legacy single-user mode pinned by ENV["CALLSCREEN_API_USERNAME"].
+    #
+    #  - missing param AND missing env  → 503 (service misconfigured)
+    #  - param/env names a non-existent user → 404 when param was given,
+    #    503 when only env was set (preserves legacy behavior).
     def resolve_api_user!
+      requested = params[:username].to_s.strip
+
+      if requested.present?
+        @api_user = User.find_by(username: requested) || User.find_by(email: requested)
+        head :not_found if @api_user.nil?
+        return
+      end
+
       identifier = ENV["CALLSCREEN_API_USERNAME"].to_s.strip
       if identifier.blank?
         head :service_unavailable

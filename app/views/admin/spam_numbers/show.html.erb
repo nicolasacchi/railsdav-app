@@ -1,0 +1,33 @@
+<%= render "admin/nav" %>
+
+<div class="container">
+  <div class="page-header">
+    <h1><%= @spam_number.phone %></h1>
+  </div>
+
+  <div class="card">
+    <h3>Spam Number Details</h3>
+    <dl class="detail-list">
+      <dt>Phone</dt>
+      <dd><%= @spam_number.phone %></dd>
+      <dt>Source</dt>
+      <dd><%= @spam_number.source %></dd>
+      <dt>Report count</dt>
+      <dd><%= @spam_number.report_count %></dd>
+      <dt>First reported</dt>
+      <dd><%= @spam_number.first_reported_at.strftime("%b %d, %Y at %H:%M") %></dd>
+      <dt>Last seen</dt>
+      <dd><%= @spam_number.last_seen_at.strftime("%b %d, %Y at %H:%M") %></dd>
+      <dt>Submitted by</dt>
+      <dd><%= @spam_number.submitted_by_username || "-" %></dd>
+      <dt>Notes</dt>
+      <dd><%= @spam_number.notes.presence || "-" %></dd>
+    </dl>
+  </div>
+
+  <div class="admin-actions" style="margin-top: 1.5rem;">
+    <%= link_to "Edit Notes", edit_admin_spam_number_path(@spam_number), class: "btn" %>
+    <%= button_to "Remove from Spam DB", admin_spam_number_path(@spam_number), method: :delete, class: "btn btn-danger", form: { data: { turbo_confirm: "Remove #{@spam_number.phone} from the spam database? Future calls from this number will go through normal screening." } } %>
+    <%= link_to "Back to Spam DB", admin_spam_numbers_path, class: "btn" %>
+  </div>
+</div>

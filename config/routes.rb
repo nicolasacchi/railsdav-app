@@ -32,6 +32,7 @@ Rails.application.routes.draw do
   namespace :admin do
     root to: "dashboard#index"
     resources :users, only: [:index, :show, :new, :create, :edit, :update, :destroy]
+    resources :spam_numbers
   end
 
   # Health check
@@ -40,7 +41,9 @@ Rails.application.routes.draw do
   # Internal JSON API for trusted services on the same private network
   # (e.g., callscreen for inbound-call contact lookups). Bearer-token auth.
   namespace :api, defaults: { format: :json } do
-    get "contact_lookup", to: "contact_lookups#show"
+    get  "health",         to: "health#show"
+    get  "contact_lookup", to: "contact_lookups#show"
+    post "spam_reports",   to: "spam_reports#create"
   end
 
   # All contacts view

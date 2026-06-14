@@ -1,13 +1,14 @@
 module Api
-  class ContactLookupsController < ActionController::API
-    before_action :authenticate_api_token!
+  class ContactLookupsController < BaseController
     before_action :resolve_api_user!
 
     def show
       result = Contacts::PhoneLookup.find_by_e164(params[:phone], user: @api_user)
+      spam   = SpamNumber.find_by(phone: SpamNumber.normalize_e164(params[:phone]))
 
+      base = spam_payload(spam)
       if result.nil?
-        render json: { match: false }
+        render json: { match: false }.merge(base)
       else
         contact = result.contact
         render json: {
@@ -16,27 +17,26 @@ module Api
           policy: result.policy,
           addressbook: contact.addressbook&.displayname,
           contact_id: contact.id
-        }
+        }.merge(base)
       end
     end
 
     private
 
-    def authenticate_api_token!
-      expected = ENV["CALLSCREEN_API_TOKEN"].to_s
-      if expected.blank?
-        head :service_unavailable
-        return
-      end
-
-      provided = request.headers["Authorization"].to_s.sub(/\ABearer /, "")
-      # SHA256 digests give us fixed-length inputs so the comparison itself
-      # cannot leak token length, regardless of what the operator picked.
-      expected_digest = Digest::SHA256.digest(expected)
-      provided_digest = Digest::SHA256.digest(provided)
-      unless ActiveSupport::SecurityUtils.fixed_length_secure_compare(provided_digest, expected_digest)
-        head :unauthorized
-      end
+    def spam_payload(spam)
+      return { spam_global: false, spam_metadata: nil } if spam.nil?
+      {
+        spam_global: true,
+        spam_metadata: {
+          first_reported_at: spam.first_reported_at.iso8601,
+          # last_seen_at lets callscreen weight by recency; notes carries the
+          # WHY (e.g. callscreen's AI spam reason) back down to every operator.
+          last_seen_at: spam.last_seen_at&.iso8601,
+          source: spam.source,
+          report_count: spam.report_count,
+          notes: spam.notes.presence
+        }
+      }
     end
 
     # Multi-tenant resolution: callscreen passes ?username=… to look up

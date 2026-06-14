@@ -1,0 +1,63 @@
+<%= render "admin/nav" %>
+
+<div class="container">
+  <div class="page-header">
+    <h1>Spam Numbers</h1>
+    <%= link_to "Add Number", new_admin_spam_number_path, class: "btn btn-primary" %>
+  </div>
+
+  <div class="card" style="margin-bottom: 1.5rem;">
+    <%= form_tag admin_spam_numbers_path, method: :get, local: true, style: "display: flex; gap: 0.5rem;" do %>
+      <input type="text" name="q" value="<%= params[:q] %>" placeholder="Search by phone..." class="search-input" style="flex: 1;">
+      <button type="submit" class="btn btn-primary btn-sm">Search</button>
+      <% if params[:q].present? %>
+        <%= link_to "Clear", admin_spam_numbers_path, class: "btn btn-sm" %>
+      <% end %>
+    <% end %>
+  </div>
+
+  <div class="card">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Phone</th>
+          <th>Source</th>
+          <th>Reports</th>
+          <th>Last Seen</th>
+          <th>First Reported</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @spam_numbers.each do |sn| %>
+          <tr>
+            <td><%= sn.phone %></td>
+            <td><%= sn.source %></td>
+            <td><%= sn.report_count %></td>
+            <td><%= sn.last_seen_at.strftime("%b %d, %Y at %H:%M") %></td>
+            <td><%= sn.first_reported_at.strftime("%b %d, %Y") %></td>
+            <td class="admin-actions">
+              <%= link_to "View", admin_spam_number_path(sn), class: "btn btn-sm" %>
+            </td>
+          </tr>
+        <% end %>
+        <% if @spam_numbers.empty? %>
+          <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No spam numbers yet.</td></tr>
+        <% end %>
+      </tbody>
+    </table>
+
+    <% total_pages = (@total.to_f / 25).ceil %>
+    <% if total_pages > 1 %>
+      <div class="admin-pagination">
+        <% if @page > 1 %>
+          <%= link_to "Previous", admin_spam_numbers_path(page: @page - 1, q: params[:q]), class: "btn btn-sm" %>
+        <% end %>
+        <span>Page <%= @page %> of <%= total_pages %></span>
+        <% if @page < total_pages %>
+          <%= link_to "Next", admin_spam_numbers_path(page: @page + 1, q: params[:q]), class: "btn btn-sm" %>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>

@@ -1,0 +1,38 @@
+<%= render "admin/nav" %>
+
+<div class="container">
+  <div class="page-header">
+    <h1>Edit Notes: <%= @spam_number.phone %></h1>
+  </div>
+
+  <div class="card">
+    <%= form_with model: @spam_number, url: admin_spam_number_path(@spam_number), method: :patch, local: true do |f| %>
+      <% if @spam_number.errors.any? %>
+        <div class="flash flash-alert">
+          <% @spam_number.errors.full_messages.each do |msg| %>
+            <p><%= msg %></p>
+          <% end %>
+        </div>
+      <% end %>
+
+      <div class="form-group">
+        <%= f.label :phone %>
+        <%= f.text_field :phone, value: @spam_number.phone, disabled: true %>
+        <small style="color: var(--text-muted);">Phone is immutable. Delete and re-add to change it.</small>
+      </div>
+      <div class="form-group">
+        <%= f.label :source %>
+        <%= f.text_field :source, value: @spam_number.source, disabled: true %>
+      </div>
+      <div class="form-group">
+        <%= f.label :notes %>
+        <%= f.text_area :notes, rows: 3 %>
+      </div>
+
+      <div class="actions">
+        <%= f.submit "Update Notes", class: "btn btn-primary" %>
+        <%= link_to "Cancel", admin_spam_number_path(@spam_number), class: "btn" %>
+      </div>
+    <% end %>
+  </div>
+</div>

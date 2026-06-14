@@ -76,12 +76,14 @@ Rails.application.configure do
   # Enable DNS rebinding protection and other `Host` header attacks.
   config.hosts = [ ENV.fetch("APP_HOST", "localhost") ]
 
-  # Skip DNS rebinding protection for the health check and the
-  # internal contact-lookup API (the latter is already gated by bearer
-  # token auth and rack-attack throttling).
+  # Skip DNS rebinding protection for the health check and the internal JSON API
+  # (/api/* is reached over the private network via the docker hostname, not a
+  # public DNS name, and every endpoint is already gated by bearer-token auth +
+  # rack-attack throttling). Covering the whole namespace avoids re-breaking this
+  # each time an /api endpoint is added (e.g. /api/health).
   config.host_authorization = {
     exclude: ->(request) {
-      request.path == "/up" || request.path.start_with?("/api/contact_lookup")
+      request.path == "/up" || request.path.start_with?("/api/")
     }
   }
 end

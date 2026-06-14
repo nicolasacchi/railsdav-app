@@ -93,7 +93,7 @@ RSpec.describe "Api::ContactLookups", type: :request do
         make_contact(phone: "+393331234567", name: "Stranger", book: other_ab)
 
         get "/api/contact_lookup", params: { phone: "+393331234567" }, headers: auth_header
-        expect(JSON.parse(response.body)).to eq("match" => false)
+        expect(JSON.parse(response.body)).to include("match" => false, "spam_global" => false)
       end
     end
 
@@ -145,20 +145,20 @@ RSpec.describe "Api::ContactLookups", type: :request do
         get "/api/contact_lookup",
             params: { phone: "+393331234567", username: user.username },
             headers: auth_header
-        expect(JSON.parse(response.body)).to eq("match" => false)
+        expect(JSON.parse(response.body)).to include("match" => false, "spam_global" => false)
       end
     end
 
     it "returns match: false when the number is unknown" do
       get "/api/contact_lookup", params: { phone: "+393339999999" }, headers: auth_header
       expect(response).to have_http_status(:ok)
-      expect(JSON.parse(response.body)).to eq("match" => false)
+      expect(JSON.parse(response.body)).to include("match" => false, "spam_global" => false)
     end
 
     it "returns match: false for non-string phone params" do
       get "/api/contact_lookup", params: { phone: [ "+393331234567" ] }, headers: auth_header
       expect(response).to have_http_status(:ok)
-      expect(JSON.parse(response.body)).to eq("match" => false)
+      expect(JSON.parse(response.body)).to include("match" => false, "spam_global" => false)
     end
 
     it "normalizes a national-format number against stored E.164" do
@@ -167,6 +167,56 @@ RSpec.describe "Api::ContactLookups", type: :request do
       body = JSON.parse(response.body)
       expect(body["match"]).to eq(true)
       expect(body["name"]).to eq("Bob")
+    end
+
+    context "spam_numbers integration" do
+      it "returns spam_global: true and spam_metadata when number is in spam_numbers (match: false branch)" do
+        SpamNumber.upsert_report!(phone: "+393331234567", source: "ntfy_report",
+                                  submitted_by_username: "nicola")
+
+        get "/api/contact_lookup", params: { phone: "+393331234567" }, headers: auth_header
+        expect(response).to have_http_status(:ok)
+        body = JSON.parse(response.body)
+        expect(body["match"]).to eq(false)
+        expect(body["spam_global"]).to eq(true)
+        expect(body["spam_metadata"]).to include("source" => "ntfy_report", "report_count" => 1)
+        expect(body["spam_metadata"]["first_reported_at"]).to be_a(String)
+      end
+
+      it "includes last_seen_at and notes in spam_metadata so the WHY + recency flow to callscreen" do
+        SpamNumber.upsert_report!(phone: "+393331234567", source: "ntfy_report",
+                                  notes: "AI: telemarketing energia (conf 92%)")
+
+        get "/api/contact_lookup", params: { phone: "+393331234567" }, headers: auth_header
+        meta = JSON.parse(response.body)["spam_metadata"]
+        expect(meta["last_seen_at"]).to be_a(String)
+        expect(meta["notes"]).to eq("AI: telemarketing energia (conf 92%)")
+      end
+
+      it "returns spam_global: true alongside contact data (match: true branch)" do
+        make_contact(phone: "+393331234567", name: "Bob", policy: "screen")
+        SpamNumber.upsert_report!(phone: "+393331234567", source: "ntfy_report")
+
+        get "/api/contact_lookup", params: { phone: "+393331234567" }, headers: auth_header
+        body = JSON.parse(response.body)
+        expect(body["match"]).to eq(true)
+        expect(body["name"]).to eq("Bob")
+        expect(body["spam_global"]).to eq(true)
+      end
+
+      it "normalizes phone before spam_numbers lookup (national → E.164)" do
+        SpamNumber.upsert_report!(phone: "+393331234567", source: "manual")
+        get "/api/contact_lookup", params: { phone: "333 123 4567" }, headers: auth_header
+        body = JSON.parse(response.body)
+        expect(body["spam_global"]).to eq(true)
+      end
+
+      it "returns spam_global: false when no spam record exists (default response)" do
+        get "/api/contact_lookup", params: { phone: "+393339999999" }, headers: auth_header
+        body = JSON.parse(response.body)
+        expect(body["spam_global"]).to eq(false)
+        expect(body["spam_metadata"]).to be_nil
+      end
     end
   end
 end

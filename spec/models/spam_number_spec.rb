@@ -114,4 +114,35 @@ RSpec.describe SpamNumber, type: :model do
       expect(SpamNumber.recent.pluck(:id)).to eq([ new.id, mid.id, old.id ])
     end
   end
+
+  describe ".active scope (recency decay)" do
+    it "excludes a lone report not seen since STALE_AFTER" do
+      stale = create(:spam_number, report_count: 1, last_seen_at: 19.months.ago)
+      expect(SpamNumber.active).not_to include(stale)
+    end
+
+    it "keeps a multi-report number even when long dormant" do
+      corroborated = create(:spam_number, report_count: 2, last_seen_at: 2.years.ago)
+      expect(SpamNumber.active).to include(corroborated)
+    end
+
+    it "keeps a recently-seen lone report" do
+      fresh = create(:spam_number, report_count: 1, last_seen_at: 1.day.ago)
+      expect(SpamNumber.active).to include(fresh)
+    end
+  end
+
+  describe "source provenance upgrade on re-report" do
+    it "promotes a feed source to an operator (ntfy_report) source" do
+      SpamNumber.upsert_report!(phone: "+393331234567", source: "feed:tellows")
+      upgraded = SpamNumber.upsert_report!(phone: "+393331234567", source: "ntfy_report")
+      expect(upgraded.source).to eq("ntfy_report")
+    end
+
+    it "never downgrades an operator source back to a feed" do
+      SpamNumber.upsert_report!(phone: "+393331234567", source: "manual")
+      same = SpamNumber.upsert_report!(phone: "+393331234567", source: "feed:tellows")
+      expect(same.source).to eq("manual")
+    end
+  end
 end

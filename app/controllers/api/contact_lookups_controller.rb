@@ -1,10 +1,13 @@
 module Api
   class ContactLookupsController < BaseController
+    include ResolvesApiUser
     before_action :resolve_api_user!
 
     def show
       result = Contacts::PhoneLookup.find_by_e164(params[:phone], user: @api_user)
-      spam   = SpamNumber.find_by(phone: SpamNumber.normalize_e164(params[:phone]))
+      # `active` decays a lone, long-dormant report so a recycled number doesn't
+      # hard-block a now-legitimate caller forever.
+      spam   = SpamNumber.active.find_by(phone: SpamNumber.normalize_e164(params[:phone]))
 
       base = spam_payload(spam)
       if result.nil?
@@ -16,7 +19,11 @@ module Api
           name: contact.cached_display_name.presence,
           policy: result.policy,
           addressbook: contact.addressbook&.displayname,
-          contact_id: contact.id
+          contact_id: contact.id,
+          # kind + groups let callscreen's screener treat a named, operator-grouped
+          # caller (Family, Doctors…) as a soft legitimacy signal.
+          kind: contact.kind,
+          groups: contact.contact_groups.pluck(:name)
         }.merge(base)
       end
     end
@@ -39,30 +46,5 @@ module Api
       }
     end
 
-    # Multi-tenant resolution: callscreen passes ?username=… to look up
-    # contacts in that tenant's address book. If absent, fall back to the
-    # legacy single-user mode pinned by ENV["CALLSCREEN_API_USERNAME"].
-    #
-    #  - missing param AND missing env  → 503 (service misconfigured)
-    #  - param/env names a non-existent user → 404 when param was given,
-    #    503 when only env was set (preserves legacy behavior).
-    def resolve_api_user!
-      requested = params[:username].to_s.strip
-
-      if requested.present?
-        @api_user = User.find_by(username: requested) || User.find_by(email: requested)
-        head :not_found if @api_user.nil?
-        return
-      end
-
-      identifier = ENV["CALLSCREEN_API_USERNAME"].to_s.strip
-      if identifier.blank?
-        head :service_unavailable
-        return
-      end
-
-      @api_user = User.find_by(username: identifier) || User.find_by(email: identifier)
-      head :service_unavailable if @api_user.nil?
-    end
   end
 end

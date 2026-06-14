@@ -6,6 +6,10 @@ class SpamNumber < ApplicationRecord
 
   SOURCES_WHITELIST = %w[ntfy_report manual].freeze
   FEED_SOURCE_FORMAT = /\Afeed:[a-z0-9_\-]{1,40}\z/
+  # A lone report not seen in this long is likely a recycled / reassigned number;
+  # exclude it from blocking decisions at read time (non-destructive — the row
+  # stays for admin audit). Multi-report numbers are never decayed.
+  STALE_AFTER = 18.months
 
   validates :phone, presence: true, uniqueness: true
   validates :source, presence: true
@@ -16,6 +20,16 @@ class SpamNumber < ApplicationRecord
   before_validation :default_timestamps, on: :create
 
   scope :recent, -> { order(last_seen_at: :desc) }
+  # Numbers that should still drive a block: corroborated (>1 report) OR seen
+  # recently. A single, long-dormant report decays out of active matching.
+  scope :active, -> { where("report_count > 1 OR last_seen_at >= ?", STALE_AFTER.ago) }
+
+  # A human/operator report (ntfy_report/manual) outranks an automated feed
+  # import — promote the stored source so the strongest provenance survives.
+  # Never downgrades an operator source back to a feed.
+  def self.upgrades_source?(current, incoming)
+    SOURCES_WHITELIST.include?(incoming) && !SOURCES_WHITELIST.include?(current.to_s)
+  end
 
   # Atomic upsert. Idempotent: a re-report bumps the counter and
   # `last_seen_at` but never resets `first_reported_at` or
@@ -32,6 +46,7 @@ class SpamNumber < ApplicationRecord
         existing.report_count += 1
         existing.last_seen_at = Time.current
         existing.notes = notes if notes.present? && existing.notes.blank?
+        existing.source = source if upgrades_source?(existing.source, source)
         existing.save!
       end
       existing
@@ -53,6 +68,8 @@ class SpamNumber < ApplicationRecord
     existing.with_lock do
       existing.report_count += 1
       existing.last_seen_at = Time.current
+      existing.notes = notes if notes.present? && existing.notes.blank?
+      existing.source = source if upgrades_source?(existing.source, source)
       existing.save!
     end
     existing

@@ -193,6 +193,14 @@ RSpec.describe "Api::ContactLookups", type: :request do
         expect(meta["notes"]).to eq("AI: telemarketing energia (conf 92%)")
       end
 
+      it "decays a lone, long-dormant report out of spam_global (recycled-number guard)" do
+        sn = SpamNumber.upsert_report!(phone: "+393331234567", source: "ntfy_report")
+        sn.update_columns(last_seen_at: 19.months.ago, report_count: 1)
+
+        get "/api/contact_lookup", params: { phone: "+393331234567" }, headers: auth_header
+        expect(JSON.parse(response.body)["spam_global"]).to eq(false)
+      end
+
       it "returns spam_global: true alongside contact data (match: true branch)" do
         make_contact(phone: "+393331234567", name: "Bob", policy: "screen")
         SpamNumber.upsert_report!(phone: "+393331234567", source: "ntfy_report")
@@ -216,6 +224,19 @@ RSpec.describe "Api::ContactLookups", type: :request do
         body = JSON.parse(response.body)
         expect(body["spam_global"]).to eq(false)
         expect(body["spam_metadata"]).to be_nil
+      end
+    end
+
+    context "contact identity for the classifier" do
+      it "returns kind + groups (from vCard CATEGORIES) for a matched contact" do
+        vcard = "BEGIN:VCARD\r\nVERSION:3.0\r\nUID:uid-grp\r\nFN:Bob\r\nN:Bob;;;;\r\n" \
+                "TEL:+393331234567\r\nCATEGORIES:Family,Doctors\r\nEND:VCARD\r\n"
+        create(:contact, addressbook: addressbook, uri: "#{SecureRandom.uuid}.vcf", vcard_data: vcard)
+
+        get "/api/contact_lookup", params: { phone: "+393331234567" }, headers: auth_header
+        body = JSON.parse(response.body)
+        expect(body["kind"]).to eq("individual")
+        expect(body["groups"]).to match_array(%w[Family Doctors])
       end
     end
   end

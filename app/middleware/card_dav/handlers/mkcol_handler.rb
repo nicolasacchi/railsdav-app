@@ -23,7 +23,7 @@ module CardDav
         description = nil
 
         if context.body && !context.body.strip.empty?
-          doc = Nokogiri::XML(context.body) { |config| config.nonet.noent }
+          doc = Nokogiri::XML(context.body) { |config| config.nonet }
           ns = Xml::NAMESPACES
           dn = doc.at_xpath("//d:displayname", ns)
           displayname = dn.text if dn

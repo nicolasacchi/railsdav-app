@@ -70,9 +70,13 @@ RSpec.describe "Contact Groups", type: :request do
       expect(gc.vcard_data).to include("FN:New Name")
     end
 
-    it "increments sync token" do
-      old_token = addressbook.sync_token
+    it "increments sync token when a member contact is affected" do
+      vcard = "BEGIN:VCARD\r\nVERSION:3.0\r\nUID:uid-1\r\nFN:Alice\r\nCATEGORIES:Old Name\r\nEND:VCARD\r\n"
+      create(:contact, addressbook: addressbook, uid: "uid-1", uri: "alice.vcf", vcard_data: vcard)
+      old_token = addressbook.reload.sync_token
+
       patch addressbook_group_path(addressbook.uri, group), params: { name: "New Name" }
+
       expect(addressbook.reload.sync_token).to be > old_token
     end
   end
@@ -108,9 +112,13 @@ RSpec.describe "Contact Groups", type: :request do
       }.to change(Contact, :count).by(-1)
     end
 
-    it "increments sync token" do
-      old_token = addressbook.sync_token
+    it "increments sync token when a member contact is affected" do
+      vcard = "BEGIN:VCARD\r\nVERSION:3.0\r\nUID:uid-1\r\nFN:Alice\r\nCATEGORIES:ToDelete\r\nEND:VCARD\r\n"
+      create(:contact, addressbook: addressbook, uid: "uid-1", uri: "alice.vcf", vcard_data: vcard)
+      old_token = addressbook.reload.sync_token
+
       delete addressbook_group_path(addressbook.uri, group)
+
       expect(addressbook.reload.sync_token).to be > old_token
     end
 

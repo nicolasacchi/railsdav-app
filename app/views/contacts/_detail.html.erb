@@ -28,6 +28,21 @@
   </div>
 </div>
 
+<% if contact.encrypted? %>
+  <% enc = contact_encryption_detail(contact) %>
+  <div class="detail-section">
+    <h3>End-to-end encrypted</h3>
+    <p class="contact-meta">
+      This contact is stored encrypted; the server never sees its contents. Decrypt it
+      from the CardDAV client that holds the key.
+    </p>
+    <div class="detail-value">
+      <span class="group-badge">🔒 <%= encryption_classification_label(enc[:classification]) %></span>
+      <span class="contact-meta">detector confidence <%= encryption_confidence_percent(enc[:probability]) %></span>
+    </div>
+  </div>
+<% end %>
+
 <% if display %>
   <% if display.emails.any? %>
     <div class="detail-section">
@@ -202,7 +217,9 @@
   <% end %>
 <% end %>
 
-<details style="margin-top: 1rem;">
-  <summary class="btn btn-sm">Raw vCard</summary>
-  <pre class="raw-vcard"><%= contact.vcard_data %></pre>
-</details>
+<% unless contact.encrypted? %>
+  <details style="margin-top: 1rem;">
+    <summary class="btn btn-sm">Raw vCard</summary>
+    <pre class="raw-vcard"><%= contact.vcard_data %></pre>
+  </details>
+<% end %>

@@ -2,3 +2,7 @@
 cleanup_expired_invitations:
   class: CleanupExpiredInvitationsJob
   schedule: every day at 3am
+
+database_backup:
+  class: BackupDatabaseJob
+  schedule: every day at 4am

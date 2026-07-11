@@ -19,7 +19,10 @@ class ContactGroup < ApplicationRecord
 
       new_vcard = Vcard::Parser.update_categories(contact.vcard_data, new_categories)
       contact.update!(vcard_data: new_vcard)
-      addressbook.sync_changes.create!(uri: contact.uri, sync_token: addressbook.sync_token, change_type: "modified")
+      # record_sync_change! increments the sync token BEFORE stamping the row, so
+      # the change is > the token any already-synced client holds. Stamping with
+      # the pre-increment token would make the change invisible to sync-collection.
+      addressbook.record_sync_change!(uri: contact.uri, change_type: "modified")
     end
   end
 end

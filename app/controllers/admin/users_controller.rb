@@ -2,7 +2,7 @@ module Admin
   class UsersController < BaseController
     PER_PAGE = 25
 
-    before_action :set_user, only: [ :show, :edit, :update, :destroy ]
+    before_action :set_user, only: [ :show, :edit, :update, :destroy, :regenerate_api_token, :revoke_api_token ]
 
     def index
       @users = User.recent
@@ -49,6 +49,21 @@ module Admin
       Rails.logger.info("[ADMIN] #{current_user.username} deleted user #{@user.username} (id=#{@user.id})")
       @user.destroy
       redirect_to admin_users_path, notice: "User deleted."
+    end
+
+    # Issues (or rotates) a per-tenant callscreen API token. The plaintext is
+    # shown exactly once via flash — only its digest is stored.
+    def regenerate_api_token
+      token = @user.regenerate_api_token!
+      Rails.logger.info("[ADMIN] #{current_user.username} issued API token for #{@user.username} (id=#{@user.id})")
+      redirect_to admin_user_path(@user),
+                  notice: "API token for #{@user.username} (copy now — it won't be shown again): #{token}"
+    end
+
+    def revoke_api_token
+      @user.revoke_api_token!
+      Rails.logger.info("[ADMIN] #{current_user.username} revoked API token for #{@user.username} (id=#{@user.id})")
+      redirect_to admin_user_path(@user), notice: "API token revoked."
     end
 
     private

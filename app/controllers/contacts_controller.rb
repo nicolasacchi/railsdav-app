@@ -2,6 +2,7 @@ class ContactsController < ApplicationController
   before_action :force_html_format, except: [:export]
   before_action :set_addressbook, except: [:index]
   before_action :set_contact, only: [:show, :edit, :update, :destroy, :export]
+  before_action :require_writable_addressbook, only: [:new, :create, :edit, :update, :destroy]
 
   def index
     owned_addressbooks = current_user.addressbooks
@@ -176,6 +177,18 @@ class ContactsController < ApplicationController
 
   def owner_of_addressbook?
     @addressbook&.user_id == current_user&.id
+  end
+
+  # Only the owner or a guest with an accepted write share may mutate contacts.
+  # Without this, a read-only guest could POST/PATCH/DELETE directly since the
+  # write UI is merely hidden, not enforced.
+  def require_writable_addressbook
+    return if owner_of_addressbook?
+
+    share = current_user.accepted_addressbook_shares.find_by(addressbook_id: @addressbook.id)
+    return if share&.writable?
+
+    redirect_to all_contacts_path, alert: "You don't have permission to modify this address book."
   end
 
   def screening_policy_param

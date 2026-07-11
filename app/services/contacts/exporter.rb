@@ -19,6 +19,17 @@ module Contacts
               .map(&:vcard_data).join("\r\n")
     end
 
+    # Characters that spreadsheet apps (Excel, Sheets, LibreOffice) treat as the
+    # start of a formula. A cell beginning with one is prefixed with a single
+    # quote so it's rendered as literal text — standard CSV-injection mitigation.
+    CSV_FORMULA_PREFIXES = ["=", "+", "-", "@", "\t", "\r"].freeze
+
+    def self.sanitize_cell(value)
+      str = value.to_s
+      return str unless CSV_FORMULA_PREFIXES.include?(str[0])
+      "'#{str}"
+    end
+
     def self.to_csv(contacts)
       bom = "\xEF\xBB\xBF"
       bom + CSV.generate do |csv|
@@ -34,7 +45,7 @@ module Contacts
           urls = d.urls.map { |u| u[:value] }
           addr = d.addresses.first || {}
 
-          csv << [
+          row = [
             d.uid,
             d.full_name,
             d.first_name,
@@ -56,6 +67,8 @@ module Contacts
             addr[:street], addr[:city], addr[:state], addr[:zip], addr[:country],
             d.categories.join(", ")
           ]
+
+          csv << row.map { |cell| sanitize_cell(cell) }
         end
       end
     end

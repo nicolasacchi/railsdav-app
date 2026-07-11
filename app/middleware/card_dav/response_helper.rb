@@ -1,5 +1,23 @@
+require "erb"
+require "cgi"
+
 module CardDav
   module ResponseHelper
+    # Percent-encode a resource name for use as a URL path segment. Emits %20 for
+    # spaces (not "+") so the href is a valid RFC 3986 URI reference that clients
+    # can echo back and we can decode symmetrically. Safe URIs (UUID.vcf) are
+    # unchanged. Contact URIs are CGI.unescaped on the way in (RequestContext),
+    # so they must be re-encoded here to round-trip.
+    def encode_uri_segment(segment)
+      ERB::Util.url_encode(segment.to_s)
+    end
+
+    # Inverse of the request path decoding in RequestContext#path_segments, so a
+    # multiget href resolves to the same stored uri regardless of escaping.
+    def decode_uri_segment(segment)
+      CGI.unescape(segment.to_s)
+    end
+
     def xml_response(status, body)
       [status, {
         "Content-Type" => "application/xml; charset=utf-8",

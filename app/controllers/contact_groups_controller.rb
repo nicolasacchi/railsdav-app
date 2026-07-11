@@ -24,12 +24,11 @@ class ContactGroupsController < ApplicationController
       # Update KIND:group vCard FN if exists
       if @group.group_contact
         gc = @group.group_contact
-        new_vcard = gc.vcard_data.sub(/^FN:.+$/i, "FN:#{new_name}")
+        # Block form so escape_text's backslashes aren't treated as sub backreferences.
+        new_vcard = gc.vcard_data.sub(/^FN:.+$/i) { "FN:#{Vcard::Parser.escape_text(new_name)}" }
         gc.update!(vcard_data: new_vcard)
-        @addressbook.sync_changes.create!(uri: gc.uri, sync_token: @addressbook.sync_token, change_type: "modified")
+        @addressbook.record_sync_change!(uri: gc.uri, change_type: "modified")
       end
-
-      @addressbook.increment_sync!
     end
 
     redirect_back fallback_location: addressbook_path(@addressbook.uri), notice: "Group renamed."
@@ -47,11 +46,10 @@ class ContactGroupsController < ApplicationController
       if @group.group_contact
         gc_uri = @group.group_contact.uri
         @group.group_contact.destroy!
-        @addressbook.sync_changes.create!(uri: gc_uri, sync_token: @addressbook.sync_token, change_type: "deleted")
+        @addressbook.record_sync_change!(uri: gc_uri, change_type: "deleted")
       end
 
       @group.destroy!
-      @addressbook.increment_sync!
     end
 
     redirect_back fallback_location: addressbook_path(@addressbook.uri), notice: "Group deleted. Contacts were not removed."

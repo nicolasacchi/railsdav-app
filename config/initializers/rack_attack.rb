@@ -14,6 +14,10 @@ Rack::Attack.throttle("contact lookup api per ip", limit: 60, period: 1.minute) 
   req.ip if req.path.start_with?("/api/contact_lookup")
 end
 
+Rack::Attack.throttle("spam reports api per ip", limit: 60, period: 1.minute) do |req|
+  req.ip if req.path.start_with?("/api/spam_reports") && req.post?
+end
+
 Rack::Attack.throttle("requests per ip", limit: 300, period: 1.minute) do |req|
   req.ip
 end

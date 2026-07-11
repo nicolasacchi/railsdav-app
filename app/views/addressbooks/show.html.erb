@@ -1,6 +1,9 @@
 <div class="container">
 <div class="page-header">
-  <h1><%= @addressbook.displayname %></h1>
+  <h1>
+    <%= @addressbook.displayname %>
+    <% if @addressbook.encryption_enabled? %><span class="status-badge" title="Contains end-to-end encrypted contacts">🔒 Encrypted</span><% end %>
+  </h1>
   <div class="actions">
     <%= link_to "New Contact", new_addressbook_contact_path(@addressbook.uri), class: "btn btn-primary" %>
     <%= link_to "Export vCard", export_addressbook_path(@addressbook.uri, export_format: "vcf"), class: "btn" %>

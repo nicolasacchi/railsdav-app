@@ -1,53 +1,67 @@
 module Api
-  class ContactLookupsController < ActionController::API
-    before_action :authenticate_api_token!
+  class ContactLookupsController < BaseController
+    include ResolvesApiUser
     before_action :resolve_api_user!
 
-    def show
-      result = Contacts::PhoneLookup.find_by_e164(params[:phone], user: @api_user)
+    MAX_BULK = 100
 
-      if result.nil?
-        render json: { match: false }
-      else
-        contact = result.contact
-        render json: {
-          match: true,
-          name: contact.cached_display_name.presence,
-          policy: result.policy,
-          addressbook: contact.addressbook&.displayname,
-          contact_id: contact.id
-        }
-      end
+    def show
+      render json: lookup_payload(params[:phone])
+    end
+
+    # Bulk lookup so callscreen can warm/refresh many numbers in one round-trip
+    # (e.g. after a reconnect). Capped at MAX_BULK; excess is dropped and noted.
+    def bulk
+      requested = Array(params[:phones])
+      phones = requested.first(MAX_BULK)
+      results = phones.map { |phone| lookup_payload(phone).merge(phone: phone.to_s) }
+      render json: {
+        ok: true,
+        count: results.size,
+        truncated: requested.size > phones.size,
+        results: results
+      }
     end
 
     private
 
-    def authenticate_api_token!
-      expected = ENV["CALLSCREEN_API_TOKEN"].to_s
-      if expected.blank?
-        head :service_unavailable
-        return
-      end
+    def lookup_payload(phone)
+      result = Contacts::PhoneLookup.find_by_e164(phone, user: @api_user)
+      # `active` decays a lone, long-dormant report so a recycled number doesn't
+      # hard-block a now-legitimate caller forever.
+      spam = SpamNumber.active.find_by(phone: SpamNumber.normalize_e164(phone))
 
-      provided = request.headers["Authorization"].to_s.sub(/\ABearer /, "")
-      # SHA256 digests give us fixed-length inputs so the comparison itself
-      # cannot leak token length, regardless of what the operator picked.
-      expected_digest = Digest::SHA256.digest(expected)
-      provided_digest = Digest::SHA256.digest(provided)
-      unless ActiveSupport::SecurityUtils.fixed_length_secure_compare(provided_digest, expected_digest)
-        head :unauthorized
-      end
+      base = spam_payload(spam)
+      return { match: false }.merge(base) if result.nil?
+
+      contact = result.contact
+      {
+        match: true,
+        name: contact.cached_display_name.presence,
+        policy: result.policy,
+        addressbook: contact.addressbook&.displayname,
+        contact_id: contact.id,
+        # kind + groups let callscreen's screener treat a named, operator-grouped
+        # caller (Family, Doctors…) as a soft legitimacy signal.
+        kind: contact.kind,
+        groups: contact.contact_groups.pluck(:name)
+      }.merge(base)
     end
 
-    def resolve_api_user!
-      identifier = ENV["CALLSCREEN_API_USERNAME"].to_s.strip
-      if identifier.blank?
-        head :service_unavailable
-        return
-      end
-
-      @api_user = User.find_by(username: identifier) || User.find_by(email: identifier)
-      head :service_unavailable if @api_user.nil?
+    def spam_payload(spam)
+      return { spam_global: false, spam_metadata: nil } if spam.nil?
+      {
+        spam_global: true,
+        spam_metadata: {
+          first_reported_at: spam.first_reported_at.iso8601,
+          # last_seen_at lets callscreen weight by recency; notes carries the
+          # WHY (e.g. callscreen's AI spam reason) back down to every operator.
+          last_seen_at: spam.last_seen_at&.iso8601,
+          source: spam.source,
+          report_count: spam.report_count,
+          notes: spam.notes.presence
+        }
+      }
     end
   end
 end

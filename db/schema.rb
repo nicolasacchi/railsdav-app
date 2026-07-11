@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_30_141332) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_10_000001) do
   create_table "addressbook_shares", force: :cascade do |t|
     t.integer "addressbook_id", null: false
     t.datetime "created_at", null: false
@@ -101,6 +101,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_30_141332) do
     t.index ["addressbook_id"], name: "index_contacts_on_addressbook_id"
   end
 
+  create_table "spam_numbers", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "first_reported_at", null: false
+    t.datetime "last_seen_at", null: false
+    t.text "notes"
+    t.string "phone", null: false
+    t.integer "report_count", default: 1, null: false
+    t.string "source", null: false
+    t.string "submitted_by_username"
+    t.datetime "updated_at", null: false
+    t.index ["last_seen_at"], name: "index_spam_numbers_on_last_seen_at"
+    t.index ["phone"], name: "index_spam_numbers_on_phone", unique: true
+  end
+
   create_table "sync_changes", force: :cascade do |t|
     t.integer "addressbook_id", null: false
     t.string "change_type", null: false
@@ -114,11 +128,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_30_141332) do
 
   create_table "users", force: :cascade do |t|
     t.boolean "admin", default: false, null: false
+    t.string "api_token_digest"
     t.datetime "created_at", null: false
     t.string "email"
     t.string "password_digest", null: false
     t.datetime "updated_at", null: false
     t.string "username", null: false
+    t.index ["api_token_digest"], name: "index_users_on_api_token_digest", unique: true
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["username"], name: "index_users_on_username", unique: true
   end

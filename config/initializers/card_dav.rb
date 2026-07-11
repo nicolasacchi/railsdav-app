@@ -22,3 +22,16 @@ mw.call("router")
 mw.call("middleware")
 
 Rails.application.config.middleware.insert_before(Rails::Rack::Logger, CardDav::Middleware)
+
+# CardDav::Middleware answers /dav/* directly and never calls into the Rails app,
+# so Rack::Attack (installed near the bottom of the stack by its railtie) would
+# never see DAV traffic and the "dav auth per ip" throttle would be dead code.
+# Move Rack::Attack to sit OUTSIDE CardDav::Middleware so DAV Basic-auth attempts
+# are rate-limited too. Guarded so a Rails middleware-API change can't break boot.
+if defined?(Rack::Attack)
+  begin
+    Rails.application.config.middleware.move_before(CardDav::Middleware, Rack::Attack)
+  rescue StandardError => e
+    Rails.logger.warn("[card_dav] could not move Rack::Attack before CardDav::Middleware: #{e.class}: #{e.message}")
+  end
+end

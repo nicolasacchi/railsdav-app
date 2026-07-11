@@ -1,0 +1,49 @@
+<%= render "admin/nav" %>
+
+<div class="container">
+  <div class="page-header">
+    <h1>Add Spam Number</h1>
+  </div>
+
+  <div class="card">
+    <h3>Single number</h3>
+    <%= form_with model: @spam_number, url: admin_spam_numbers_path, method: :post, local: true do |f| %>
+      <% if @spam_number.errors.any? %>
+        <div class="flash flash-alert">
+          <% @spam_number.errors.full_messages.each do |msg| %>
+            <p><%= msg %></p>
+          <% end %>
+        </div>
+      <% end %>
+
+      <div class="form-group">
+        <%= f.label :phone, "Phone (E.164 or national format)" %>
+        <%= f.text_field :phone, autofocus: true, placeholder: "+393331234567" %>
+      </div>
+      <div class="form-group">
+        <%= f.label :notes %>
+        <%= f.text_area :notes, rows: 3 %>
+      </div>
+
+      <div class="actions">
+        <%= f.submit "Add Number", class: "btn btn-primary" %>
+        <%= link_to "Cancel", admin_spam_numbers_path, class: "btn" %>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="card" style="margin-top: 1.5rem;">
+    <h3>Bulk paste</h3>
+    <p style="color: var(--text-muted);">One number per line, or comma/space-separated. Numbers are normalized to E.164.</p>
+    <%= form_tag admin_spam_numbers_path, method: :post, local: true do %>
+      <div class="form-group">
+        <textarea name="bulk_phones" rows="8" style="width: 100%; font-family: monospace;"
+                  placeholder="+393331111111&#10;+393332222222&#10;..."></textarea>
+      </div>
+      <div class="actions">
+        <button type="submit" class="btn btn-primary">Import</button>
+        <%= link_to "Cancel", admin_spam_numbers_path, class: "btn" %>
+      </div>
+    <% end %>
+  </div>
+</div>

@@ -4,7 +4,7 @@ module CardDav
       def self.parse_propfind(xml_string)
         return { allprop: true, propname: false, props: [] } if xml_string.nil? || xml_string.strip.empty?
 
-        doc = Nokogiri::XML(xml_string) { |config| config.nonet.noent }
+        doc = Nokogiri::XML(xml_string) { |config| config.nonet }
         doc.remove_namespaces!
 
         if doc.at_xpath("//allprop")
@@ -12,7 +12,7 @@ module CardDav
         elsif doc.at_xpath("//propname")
           { allprop: false, propname: true, props: [] }
         else
-          props = extract_props(Nokogiri::XML(xml_string) { |config| config.nonet.noent })
+          props = extract_props(Nokogiri::XML(xml_string) { |config| config.nonet })
           { allprop: false, propname: false, props: props }
         end
       end
@@ -20,7 +20,7 @@ module CardDav
       def self.parse_report(xml_string)
         return nil if xml_string.nil? || xml_string.strip.empty?
 
-        doc = Nokogiri::XML(xml_string) { |config| config.nonet.noent }
+        doc = Nokogiri::XML(xml_string) { |config| config.nonet }
         ns = NAMESPACES
 
         root = doc.root

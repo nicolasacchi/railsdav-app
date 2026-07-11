@@ -75,6 +75,11 @@ module CardDav
         end
 
         empty_response(204, { "ETag" => contact.etag })
+      rescue ActiveRecord::RecordNotUnique
+        # The new vCard body carries a UID already used by a different contact in
+        # this book — a no-uid-conflict precondition failure (RFC 6352 §6.3.2),
+        # not a server error.
+        text_response(409, "Conflict: a contact with this UID already exists in this addressbook")
       end
 
       def create_contact(context, addressbook, vcard_data, uid:, encrypted: false)
@@ -102,6 +107,9 @@ module CardDav
         end
 
         empty_response(201, { "ETag" => contact.etag })
+      rescue ActiveRecord::RecordNotUnique
+        # Lost the check-then-insert race against a concurrent PUT of the same UID.
+        text_response(409, "Conflict: a contact with this UID already exists in this addressbook")
       end
     end
   end

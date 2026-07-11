@@ -112,7 +112,7 @@ module CardDav
           addressbook = resource
           owner = addressbook.user
           addressbook.contacts.each do |contact|
-            href = "/dav/#{owner.username}/contacts/#{addressbook.uri}/#{contact.uri}"
+            href = "/dav/#{owner.username}/contacts/#{addressbook.uri}/#{encode_uri_segment(contact.uri)}"
             ms.add_response(href: href) do |resp|
               resolve_props(resp, props, :contact, contact, context)
             end
@@ -156,7 +156,7 @@ module CardDav
           "/dav/#{owner.username}/contacts/#{resource.uri}/"
         when :contact
           owner = resource.addressbook.user
-          "/dav/#{owner.username}/contacts/#{resource.addressbook.uri}/#{resource.uri}"
+          "/dav/#{owner.username}/contacts/#{resource.addressbook.uri}/#{encode_uri_segment(resource.uri)}"
         end
       end
     end

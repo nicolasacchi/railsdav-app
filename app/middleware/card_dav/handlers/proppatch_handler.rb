@@ -16,7 +16,7 @@ module CardDav
         addressbook = find_addressbook(context)
         return not_found unless addressbook
 
-        doc = Nokogiri::XML(context.body) { |config| config.nonet.noent }
+        doc = Nokogiri::XML(context.body) { |config| config.nonet }
         ns = Xml::NAMESPACES
 
         updates = {}

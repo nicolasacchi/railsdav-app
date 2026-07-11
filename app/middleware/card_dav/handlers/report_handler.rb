@@ -41,7 +41,7 @@ module CardDav
         ms = Xml::MultiStatus.new
 
         parsed[:hrefs].each do |href|
-          uri = href.split("/").last
+          uri = decode_uri_segment(href.split("/").last)
           contact = addressbook.contacts.find_by(uri: uri)
 
           if contact
@@ -63,7 +63,7 @@ module CardDav
         if parsed[:sync_token].nil? || parsed[:sync_token].strip.empty?
           # Initial sync: return all contacts
           addressbook.contacts.each do |contact|
-            href = "/dav/#{owner.username}/contacts/#{addressbook.uri}/#{contact.uri}"
+            href = "/dav/#{owner.username}/contacts/#{addressbook.uri}/#{encode_uri_segment(contact.uri)}"
             ms.add_response(href: href) do |resp|
               resolve_props(resp, parsed[:props], :contact, contact, context)
             end
@@ -82,7 +82,7 @@ module CardDav
           changes.each { |c| latest_changes[c.uri] = c }
 
           latest_changes.each do |uri, change|
-            href = "/dav/#{owner.username}/contacts/#{addressbook.uri}/#{uri}"
+            href = "/dav/#{owner.username}/contacts/#{addressbook.uri}/#{encode_uri_segment(uri)}"
 
             if change.change_type == "deleted"
               ms.add_response(href: href, status: "404 Not Found")
@@ -117,7 +117,7 @@ module CardDav
         end
 
         contacts.each do |contact|
-          href = "/dav/#{owner.username}/contacts/#{addressbook.uri}/#{contact.uri}"
+          href = "/dav/#{owner.username}/contacts/#{addressbook.uri}/#{encode_uri_segment(contact.uri)}"
           ms.add_response(href: href) do |resp|
             resolve_props(resp, parsed[:props], :contact, contact, context)
           end
@@ -129,34 +129,36 @@ module CardDav
       def filter_contacts(addressbook, filter)
         # Encrypted contacts cannot be searched by content
         contacts = addressbook.contacts.where(encrypted: false).to_a
+        prop_filters = filter[:prop_filters]
+        return contacts if prop_filters.blank?
 
-        filter[:prop_filters].each do |pf|
-          if pf[:is_not_defined]
-            contacts = contacts.reject { |c| extract_vcard_prop(c.vcard_data, pf[:name]) }
-          elsif pf[:text_match]
-            contacts = contacts.select do |c|
-              prop_value = extract_vcard_prop(c.vcard_data, pf[:name])
-              next false unless prop_value
-              case pf[:match_type]
-              when "contains"
-                prop_value.downcase.include?(pf[:text_match].downcase)
-              when "starts-with"
-                prop_value.downcase.start_with?(pf[:text_match].downcase)
-              when "ends-with"
-                prop_value.downcase.end_with?(pf[:text_match].downcase)
-              when "equals"
-                prop_value.downcase == pf[:text_match].downcase
-              else
-                prop_value.downcase.include?(pf[:text_match].downcase)
-              end
-            end
-          else
-            # prop-filter without text-match or is-not-defined = property must exist
-            contacts = contacts.select { |c| extract_vcard_prop(c.vcard_data, pf[:name]) }
-          end
+        # RFC 6352 §10.5.1: filter/@test is "anyof" (logical OR, the default) or
+        # "allof" (logical AND). Previously every prop-filter was AND'd regardless.
+        if filter[:test].to_s.downcase == "allof"
+          contacts.select { |c| prop_filters.all? { |pf| prop_filter_matches?(c, pf) } }
+        else
+          contacts.select { |c| prop_filters.any? { |pf| prop_filter_matches?(c, pf) } }
         end
+      end
 
-        contacts
+      def prop_filter_matches?(contact, pf)
+        if pf[:is_not_defined]
+          extract_vcard_prop(contact.vcard_data, pf[:name]).nil?
+        elsif pf[:text_match]
+          prop_value = extract_vcard_prop(contact.vcard_data, pf[:name])
+          return false unless prop_value
+          needle = pf[:text_match].downcase
+          haystack = prop_value.downcase
+          case pf[:match_type]
+          when "starts-with" then haystack.start_with?(needle)
+          when "ends-with"   then haystack.end_with?(needle)
+          when "equals"      then haystack == needle
+          else                    haystack.include?(needle)
+          end
+        else
+          # prop-filter without text-match or is-not-defined = property must exist
+          !extract_vcard_prop(contact.vcard_data, pf[:name]).nil?
+        end
       end
 
       def extract_vcard_prop(vcard_data, prop_name)

@@ -21,7 +21,8 @@ module Vcard
       group_labels = extract_group_labels(lines)
 
       full_name = extract_value(lines, "FN")
-      n_parts = extract_value(lines, "N")&.split(";") || []
+      n_raw = extract_value(lines, "N", unescape: false)
+      n_parts = n_raw ? split_structured(n_raw) : []
       last_name = n_parts[0]&.presence
       first_name = n_parts[1]&.presence
       middle_name = n_parts[2]&.presence
@@ -60,8 +61,8 @@ module Vcard
       sound = sound_raw&.match?(%r{\Ahttps?://}i) ? sound_raw : nil
 
       photo_data, photo_type = extract_photo(lines)
-      addresses = extract_typed_values(lines, "ADR", group_labels).map do |addr|
-        parts = addr[:value].split(";")
+      addresses = extract_typed_values(lines, "ADR", group_labels, unescape: false).map do |addr|
+        parts = split_structured(addr[:value])
         {
           type: addr[:type],
           street: parts[2],
@@ -126,13 +127,13 @@ module Vcard
     def self.generate(params)
       uid = params[:uid] || SecureRandom.uuid
       kind = params[:kind]
-      lines = ["BEGIN:VCARD", "VERSION:3.0", "UID:#{uid}"]
+      lines = ["BEGIN:VCARD", "VERSION:3.0", "UID:#{escape_text(uid)}"]
 
       if kind == "group"
         lines << "KIND:group"
         fn = params[:full_name].presence || "Unnamed Group"
-        lines << "FN:#{fn}"
-        lines << "N:#{fn};;;;"
+        lines << "FN:#{escape_text(fn)}"
+        lines << "N:#{escape_text(fn)};;;;"
         Array(params[:member_uids]).each do |member_uid|
           lines << "MEMBER:urn:uuid:#{member_uid}"
         end
@@ -144,21 +145,21 @@ module Vcard
         prefix = params[:name_prefix].presence || ""
         suffix = params[:name_suffix].presence || ""
         fn ||= [prefix, first, middle, last, suffix].reject(&:empty?).join(" ")
-        lines << "FN:#{fn}"
-        lines << "N:#{last};#{first};#{middle};#{prefix};#{suffix}"
+        lines << "FN:#{escape_text(fn)}"
+        lines << "N:#{[last, first, middle, prefix, suffix].map { |p| escape_text(p) }.join(';')}"
 
-        lines << "NICKNAME:#{params[:nickname]}" if params[:nickname].present?
-        lines << "PRONOUNS:#{params[:pronouns]}" if params[:pronouns].present?
-        lines << "GENDER:#{params[:gender]}" if params[:gender].present?
+        lines << "NICKNAME:#{escape_text(params[:nickname])}" if params[:nickname].present?
+        lines << "PRONOUNS:#{escape_text(params[:pronouns])}" if params[:pronouns].present?
+        lines << "GENDER:#{escape_text(params[:gender])}" if params[:gender].present?
 
         Array(params[:emails]).each do |email|
           next if email.blank?
-          lines << "EMAIL:#{email}"
+          lines << "EMAIL:#{escape_text(email)}"
         end
 
         Array(params[:phones]).each do |phone|
           next if phone.blank?
-          lines << "TEL:#{phone}"
+          lines << "TEL:#{escape_text(phone)}"
         end
 
         Array(params[:impp]).each do |im|
@@ -167,20 +168,20 @@ module Vcard
           value = im[:value].presence
           next unless value
           type = im[:type].presence
-          lines << (type ? "IMPP;TYPE=#{type}:#{value}" : "IMPP:#{value}")
+          lines << (type ? "IMPP;TYPE=#{escape_param(type)}:#{escape_text(value)}" : "IMPP:#{escape_text(value)}")
         end
 
-        lines << "ORG:#{params[:organization]}" if params[:organization].present?
-        lines << "TITLE:#{params[:title]}" if params[:title].present?
-        lines << "ROLE:#{params[:role]}" if params[:role].present?
-        lines << "NOTE:#{params[:note]}" if params[:note].present?
+        lines << "ORG:#{escape_text(params[:organization])}" if params[:organization].present?
+        lines << "TITLE:#{escape_text(params[:title])}" if params[:title].present?
+        lines << "ROLE:#{escape_text(params[:role])}" if params[:role].present?
+        lines << "NOTE:#{escape_text(params[:note])}" if params[:note].present?
 
-        lines << "BDAY:#{params[:birthday]}" if params[:birthday].present?
-        lines << "ANNIVERSARY:#{params[:anniversary]}" if params[:anniversary].present?
+        lines << "BDAY:#{escape_text(params[:birthday])}" if params[:birthday].present?
+        lines << "ANNIVERSARY:#{escape_text(params[:anniversary])}" if params[:anniversary].present?
 
         Array(params[:urls]).each do |url|
           next if url.blank?
-          lines << "URL:#{url}"
+          lines << "URL:#{escape_text(url)}"
         end
 
         Array(params[:addresses]).each do |addr|
@@ -193,7 +194,8 @@ module Vcard
           country = addr[:country].presence || ""
           next if [street, city, state, zip, country].all?(&:blank?)
           type = addr[:type].presence || "HOME"
-          lines << "ADR;TYPE=#{type}:;;#{street};#{city};#{state};#{zip};#{country}"
+          parts = [street, city, state, zip, country].map { |p| escape_text(p) }
+          lines << "ADR;TYPE=#{escape_param(type)}:;;#{parts.join(';')}"
         end
 
         Array(params[:social_profiles]).each do |sp|
@@ -202,22 +204,43 @@ module Vcard
           value = sp[:value].presence
           next unless value
           type = sp[:type].presence
-          lines << (type ? "X-SOCIALPROFILE;TYPE=#{type}:#{value}" : "X-SOCIALPROFILE:#{value}")
+          lines << (type ? "X-SOCIALPROFILE;TYPE=#{escape_param(type)}:#{escape_text(value)}" : "X-SOCIALPROFILE:#{escape_text(value)}")
         end
 
         if params[:photo_url].present?
-          lines << "PHOTO;VALUE=uri:#{params[:photo_url]}"
+          lines << "PHOTO;VALUE=uri:#{escape_text(params[:photo_url])}"
         end
 
         categories = Array(params[:categories]).reject(&:blank?)
         if categories.any?
-          escaped = categories.map { |c| c.gsub(",", "\\,") }
-          lines << "CATEGORIES:#{escaped.join(",")}"
+          lines << "CATEGORIES:#{categories.map { |c| escape_text(c) }.join(",")}"
         end
       end
 
       lines << "END:VCARD"
       lines.join("\r\n") + "\r\n"
+    end
+
+    # Escape a vCard TEXT value per RFC 6350 §3.4: backslash, comma and semicolon
+    # are escaped, and CR/LF become a literal "\n". Critically this neutralizes
+    # embedded newlines so user input can't inject additional vCard lines or
+    # properties. Single-pass block form avoids double-escaping and gsub
+    # replacement-string backreference pitfalls.
+    def self.escape_text(value)
+      value.to_s.gsub(/[\\;,]|\r\n|\r|\n/) do |m|
+        case m
+        when "\\" then "\\\\"
+        when ";"  then "\\;"
+        when ","  then "\\,"
+        else "\\n"
+        end
+      end
+    end
+
+    # Escape a structured-value / parameter token: strip characters that would
+    # break out of the TYPE=... parameter or the property name (CR/LF, ; : ,).
+    def self.escape_param(value)
+      value.to_s.gsub(/[\r\n;:,]/, " ").strip
     end
 
     def self.update_categories(vcard_data, categories)
@@ -272,20 +295,21 @@ module Vcard
       labels
     end
 
-    def self.extract_value(lines, property)
+    def self.extract_value(lines, property, unescape: true)
       re = PROP_RE.call(property)
       lines.each do |line|
         if line.match?(re)
           value = line.sub(re, "").strip
           value = decode_qp(value) if line.match?(/ENCODING=QUOTED-PRINTABLE/i)
           value = value.scrub("") unless value.valid_encoding?
+          value = unescape_text(value) if unescape
           return value
         end
       end
       nil
     end
 
-    def self.extract_typed_values(lines, property, group_labels = {})
+    def self.extract_typed_values(lines, property, group_labels = {}, unescape: true)
       re = PROP_RE.call(property)
       results = []
       lines.each do |line|
@@ -294,10 +318,28 @@ module Vcard
         value = line.sub(re, "").strip
         value = decode_qp(value) if line.match?(/ENCODING=QUOTED-PRINTABLE/i)
         value = value.scrub("") unless value.valid_encoding?
+        value = unescape_text(value) if unescape
         type = resolve_type(line, group, group_labels)
         results << { type: type, value: value }
       end
       results
+    end
+
+    # Reverse of escape_text: interpret RFC 6350 escapes. Recognized escapes are
+    # \n / \N (newline), \\ (backslash), \, and \; ; an unrecognized \x yields x.
+    def self.unescape_text(value)
+      value.to_s.gsub(/\\(.)/) do
+        case $1
+        when "n", "N" then "\n"
+        else $1
+        end
+      end
+    end
+
+    # Split a structured value (N, ADR) on unescaped semicolons, then unescape
+    # each component so escaped \; survives as a literal within a component.
+    def self.split_structured(value)
+      value.split(/(?<!\\);/, -1).map { |part| unescape_text(part) }
     end
 
     def self.resolve_type(line, group, group_labels)
@@ -327,7 +369,7 @@ module Vcard
       lines.each do |line|
         next unless line.match?(re)
         value = line.sub(re, "").strip
-        cats = value.split(/(?<!\\),/).map { |c| c.gsub("\\,", ",").strip }
+        cats = value.split(/(?<!\\),/).map { |c| unescape_text(c).strip }
         all_categories.concat(cats)
       end
       all_categories.reject(&:blank?).uniq

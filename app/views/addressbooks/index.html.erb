@@ -37,7 +37,10 @@
 
 <% @addressbooks.each do |ab| %>
   <div class="card">
-    <h2><%= link_to ab.displayname, addressbook_path(ab.uri) %></h2>
+    <h2>
+      <%= link_to ab.displayname, addressbook_path(ab.uri) %>
+      <% if ab.encryption_enabled? %><span class="status-badge" title="This address book contains end-to-end encrypted contacts">🔒 Encrypted</span><% end %>
+    </h2>
     <p><%= ab.description %></p>
     <p><%= ab.contacts.count %> contacts</p>
   </div>

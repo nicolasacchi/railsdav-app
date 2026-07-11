@@ -7,42 +7,35 @@ module Api
   # Idempotent: an existing contact's policy is set to "allow"; an unknown number
   # creates a minimal contact in the user's default book. Both record a CardDAV
   # sync change so the operator's address-book clients pick it up.
+  #
+  # This is a thin "policy = allow" alias over ContactPoliciesController, kept for
+  # backward compatibility with existing callscreen deployments.
   class ContactAllowsController < BaseController
     include ResolvesApiUser
+    include ResolvesContactByPhone
     before_action :resolve_api_user!
 
     def create
       e164 = SpamNumber.normalize_e164(params[:phone])
       return render(json: { ok: false, error: "invalid_phone" }, status: :unprocessable_entity) if e164.nil?
 
-      contact = existing_contact(e164)
+      contact = existing_contact_for(e164)
       if contact
         contact.update!(call_screening_policy: "allow")
         contact.addressbook.record_sync_change!(uri: contact.uri, change_type: "modified")
       else
-        book = target_addressbook
+        book = target_addressbook_for_api_user
         return render(json: { ok: false, error: "no_addressbook" }, status: :unprocessable_entity) if book.nil?
         vcard = Vcard::Parser.generate(full_name: params[:name].to_s.presence || e164, phones: [ e164 ])
         contact = book.contacts.create!(uri: "#{SecureRandom.uuid}.vcf", vcard_data: vcard, call_screening_policy: "allow")
         book.record_sync_change!(uri: contact.uri, change_type: "created")
       end
 
+      Callscreen.notify_contact_change(
+        user: @api_user, contact: contact,
+        event: contact.previously_new_record? ? "created" : "updated"
+      )
       render json: { ok: true, contact_id: contact.id, policy: "allow", created: contact.previously_new_record? }
-    end
-
-    private
-
-    # Strictest match within the user's OWN books, mirroring PhoneLookup.
-    def existing_contact(e164)
-      ContactPhoneNumber
-        .where(e164: e164)
-        .joins(contact: :addressbook)
-        .where(addressbooks: { user_id: @api_user.id })
-        .first&.contact
-    end
-
-    def target_addressbook
-      @api_user.addressbooks.find_by(uri: "default") || @api_user.addressbooks.order(:id).first
     end
   end
 end

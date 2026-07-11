@@ -12,6 +12,13 @@ module ResolvesApiUser
   private
 
   def resolve_api_user!
+    # A per-tenant API token pins the tenant; ?username= is ignored so a token
+    # scoped to one user can never read or write another tenant's book.
+    if api_authenticated_user
+      @api_user = api_authenticated_user
+      return
+    end
+
     requested = params[:username].to_s.strip
 
     if requested.present?

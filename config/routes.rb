@@ -31,7 +31,12 @@ Rails.application.routes.draw do
   # Admin
   namespace :admin do
     root to: "dashboard#index"
-    resources :users, only: [:index, :show, :new, :create, :edit, :update, :destroy]
+    resources :users, only: [:index, :show, :new, :create, :edit, :update, :destroy] do
+      member do
+        post :regenerate_api_token
+        delete :revoke_api_token
+      end
+    end
     resources :spam_numbers
   end
 
@@ -42,9 +47,13 @@ Rails.application.routes.draw do
   # (e.g., callscreen for inbound-call contact lookups). Bearer-token auth.
   namespace :api, defaults: { format: :json } do
     get  "health",                to: "health#show"
+    get  "metrics",               to: "metrics#show"
     get  "contact_lookup",        to: "contact_lookups#show"
+    post "contact_lookup/bulk",   to: "contact_lookups#bulk"
     post "spam_reports",          to: "spam_reports#create"
+    get  "spam_numbers",          to: "spam_numbers#index"
     post "contacts/upsert_allow", to: "contact_allows#create"
+    post "contacts/set_policy",   to: "contact_policies#create"
   end
 
   # All contacts view

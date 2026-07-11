@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_10_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_10_000001) do
   create_table "addressbook_shares", force: :cascade do |t|
     t.integer "addressbook_id", null: false
     t.datetime "created_at", null: false
@@ -128,11 +128,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_10_000001) do
 
   create_table "users", force: :cascade do |t|
     t.boolean "admin", default: false, null: false
+    t.string "api_token_digest"
     t.datetime "created_at", null: false
     t.string "email"
     t.string "password_digest", null: false
     t.datetime "updated_at", null: false
     t.string "username", null: false
+    t.index ["api_token_digest"], name: "index_users_on_api_token_digest", unique: true
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["username"], name: "index_users_on_username", unique: true
   end

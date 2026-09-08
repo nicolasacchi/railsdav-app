@@ -5,7 +5,7 @@
 </section>
 
 <div class="legal-content">
-  <p class="last-updated">Last updated: March 15, 2026</p>
+  <p class="last-updated">Last updated: 8 September 2026</p>
 
   <p>This policy explains how Contacts (<%= Railsdav.site_url %>) uses cookies.</p>
 
@@ -23,7 +23,7 @@
     </thead>
     <tbody>
       <tr>
-        <td><code>_contacts_session</code></td>
+        <td><code>_railsdav_app_session</code></td>
         <td>Keeps you logged in to the web interface</td>
         <td>Strictly necessary</td>
         <td>Browser session</td>
@@ -47,5 +47,5 @@
   <p>You can delete or block cookies through your browser settings. Note that disabling the session cookie will prevent you from staying logged in to the web interface. CardDAV sync (via DAVx5 or other clients) uses HTTP Basic Auth and does not rely on cookies.</p>
 
   <h2>5. Contact</h2>
-  <p>Questions about this policy? Contact us at <strong>support@scc.im</strong>.</p>
+  <p>Questions about this policy? Contact us at <strong><%= Railsdav.mailer_from %></strong>.</p>
 </div>

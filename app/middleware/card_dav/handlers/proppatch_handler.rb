@@ -7,8 +7,8 @@ module CardDav
         auth_error = authorize!(context)
         return auth_error if auth_error
 
-        write_error = require_writable!(context)
-        return write_error if write_error
+        owner_error = require_owner!(context)
+        return owner_error if owner_error
 
         return bad_request unless context.body
         return method_not_allowed unless context.resource_type == :addressbook

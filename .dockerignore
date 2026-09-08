@@ -1,0 +1,13 @@
+.git
+.env
+/log
+/tmp
+/storage
+*.sqlite3
+/vendor/bundle
+/vendor/cache
+/.bundle
+/config/*.key
+node_modules
+.playwright-mcp
+/spec

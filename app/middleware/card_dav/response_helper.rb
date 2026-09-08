@@ -73,6 +73,11 @@ module CardDav
         else
           return forbidden
         end
+      elsif context.user && (context.resource_type == :addressbook || context.resource_type == :contact)
+        book = context.user.addressbooks.find_by(uri: context.addressbook_uri)
+        if book && !addressbook_authenticated?(context, book)
+          return forbidden
+        end
       end
       nil
     end
@@ -87,6 +92,11 @@ module CardDav
       nil
     end
 
+    def require_owner!(context)
+      return forbidden if context.public_token || context.share
+      nil
+    end
+
     def find_addressbook(context)
       if context.shared_addressbook
         context.shared_addressbook
@@ -94,8 +104,15 @@ module CardDav
         share = AddressbookShare.find_by(token: context.public_token)
         share&.addressbook
       else
-        context.user.addressbooks.find_by(uri: context.addressbook_uri)
+        book = context.user.addressbooks.find_by(uri: context.addressbook_uri)
+        return nil unless book
+        return book if addressbook_authenticated?(context, book)
+        nil
       end
+    end
+
+    def addressbook_authenticated?(context, book)
+      Array(context.authenticated_addressbooks).any? { |ab| ab.id == book.id }
     end
 
     def find_contact(addressbook, context)

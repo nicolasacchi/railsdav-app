@@ -88,7 +88,7 @@ module CardDav
           # No children to list at principal level for PROPFIND depth 1
           # (addressbook-home-set is returned as a property, not as children)
         when :home_set
-          context.user.addressbooks.each do |ab|
+          Array(context.authenticated_addressbooks).each do |ab|
             href = "/dav/#{context.user.username}/contacts/#{ab.uri}/"
             ms.add_response(href: href) do |resp|
               resolve_props(resp, props, :addressbook, ab, context)

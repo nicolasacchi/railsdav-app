@@ -12,14 +12,12 @@ module CardDav
       end
       return false unless user
 
-      user.addressbooks.where.not(dav_password_digest: nil).each do |ab|
-        if ab.authenticate_dav(password)
-          context.user = user
-          return true
-        end
-      end
+      matching = user.addressbooks.where.not(dav_password_digest: nil).select { |ab| ab.authenticate_dav(password) }
+      return false if matching.empty?
 
-      false
+      context.user = user
+      context.authenticated_addressbooks = matching
+      true
     end
 
     def self.challenge_response

@@ -34,7 +34,7 @@
   <% end %>
   <%= button_to "Regenerate", regenerate_dav_password_addressbook_path(@addressbook.uri), method: :post, class: "btn btn-sm", form: { style: "display: inline;" }, data: { confirm: "Regenerate DAV password? Any CardDAV client using this password will need to be updated." } %>
 </div>
-<p class="text-muted" style="margin-top: -0.5rem; margin-bottom: 1rem; font-size: 0.85rem;">Use this password in your CardDAV client instead of your account password.</p>
+<p class="text-muted" style="margin-top: -0.5rem; margin-bottom: 1rem; font-size: 0.85rem;">This password is for this addressbook only; regenerating it does not revoke other books' clients. Use it in your CardDAV client instead of your account password.</p>
 
 <div class="card">
   <% if @parsed_contacts.empty? %>

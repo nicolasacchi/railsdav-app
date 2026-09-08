@@ -64,6 +64,28 @@ RSpec.describe "WebDAV Sharing", type: :request do
       dav_delete "/dav/alice/contacts/default/shared-contact.vcf", user: shared_user, if_match: contact.etag
       expect(response).to have_http_status(204)
     end
+
+    it "blocks DELETE of the collection for a write share" do
+      dav_delete "/dav/alice/contacts/default/", user: shared_user
+      expect(response).to have_http_status(403)
+      expect(Addressbook.exists?(addressbook.id)).to be true
+    end
+
+    it "blocks PROPPATCH displayname on the collection for a write share" do
+      xml = <<~XML
+        <?xml version="1.0" encoding="utf-8"?>
+        <d:propertyupdate xmlns:d="DAV:">
+          <d:set><d:prop>
+            <d:displayname>Hijacked</d:displayname>
+          </d:prop></d:set>
+        </d:propertyupdate>
+      XML
+      headers = { "CONTENT_TYPE" => "application/xml; charset=utf-8" }
+      headers.merge!(basic_auth_header(shared_user.username, DAV_TEST_PASSWORD))
+      process(:proppatch, "/dav/alice/contacts/default/", headers: headers, params: xml)
+      expect(response).to have_http_status(403)
+      expect(addressbook.reload.displayname).not_to eq("Hijacked")
+    end
   end
 
   describe "Shared addressbook discovery" do
@@ -90,6 +112,14 @@ RSpec.describe "WebDAV Sharing", type: :request do
     it "blocks GET on another user's contact" do
       dav_get "/dav/alice/contacts/default/shared-contact.vcf", user: shared_user
       expect(response).to have_http_status(403)
+    end
+  end
+
+  describe "Owner collection admin" do
+    it "allows the owner to DELETE the collection" do
+      dav_delete "/dav/alice/contacts/default/", user: owner
+      expect(response).to have_http_status(204)
+      expect(owner.addressbooks.find_by(uri: "default")).to be_nil
     end
   end
 

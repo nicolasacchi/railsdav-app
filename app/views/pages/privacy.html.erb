@@ -5,7 +5,7 @@
 </section>
 
 <div class="legal-content">
-  <p class="last-updated">Last updated: March 15, 2026</p>
+  <p class="last-updated">Last updated: 8 September 2026</p>
 
   <p>This policy describes how Contacts (<%= Railsdav.site_url %>) collects, uses, and protects your information.</p>
 
@@ -14,7 +14,6 @@
   <ul>
     <li><strong>Account information:</strong> username, email address (optional), and a securely hashed password.</li>
     <li><strong>Contact data:</strong> vCard records you create, import, or sync to the service.</li>
-    <li><strong>Billing information:</strong> processed and stored by <a href="https://stripe.com/privacy" target="_blank" rel="noopener">Stripe</a>. We do not store your credit card number.</li>
     <li><strong>Server logs:</strong> IP address, request timestamps, and user agent strings. Logs are retained for a limited period for security and debugging purposes.</li>
   </ul>
 
@@ -30,16 +29,12 @@
   <h2>3. How We Use Your Data</h2>
   <ul>
     <li>To authenticate you and provide CardDAV sync.</li>
-    <li>To process subscription payments via Stripe.</li>
     <li>To send essential service communications (if email is provided).</li>
   </ul>
   <p>We will never sell, rent, or share your personal data with third parties for marketing purposes.</p>
 
   <h2>4. Third-Party Services</h2>
-  <p>The only third-party service that receives your data is:</p>
-  <ul>
-    <li><strong>Stripe</strong> &mdash; for payment processing. Stripe receives your email and payment details. See <a href="https://stripe.com/privacy" target="_blank" rel="noopener">Stripe's Privacy Policy</a>.</li>
-  </ul>
+  <p>This is a self-hosted application. There is no payment processor.</p>
 
   <h2>5. Cookies</h2>
   <p>We use a single session cookie to keep you logged in. No tracking or analytics cookies are used. See our <%= link_to "Cookie Policy", cookies_path %> for details.</p>
@@ -71,5 +66,5 @@
   <p>We may update this policy from time to time. Changes will be posted on this page with an updated date.</p>
 
   <h2>10. Contact</h2>
-  <p>For privacy-related questions, contact us at <strong>support@scc.im</strong>.</p>
+  <p>For privacy-related questions, contact us at <strong><%= Railsdav.mailer_from %></strong>.</p>
 </div>

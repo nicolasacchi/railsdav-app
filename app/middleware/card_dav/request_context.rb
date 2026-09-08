@@ -4,7 +4,7 @@ module CardDav
   class RequestContext
     attr_reader :env, :method, :path, :depth, :body, :content_type,
                 :if_match, :if_none_match, :e2ee_uid
-    attr_accessor :user, :share, :shared_addressbook, :public_token
+    attr_accessor :user, :share, :shared_addressbook, :public_token, :authenticated_addressbooks
     attr_writer :path_segments, :resource_type
 
     def initialize(env)
@@ -17,6 +17,7 @@ module CardDav
       @if_none_match = parse_etag_header(env["HTTP_IF_NONE_MATCH"])
       @e2ee_uid = env["HTTP_X_E2EE_UID"]&.strip
       @body = read_body(env)
+      @authenticated_addressbooks = []
     end
 
     def path_segments

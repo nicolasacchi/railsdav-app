@@ -31,10 +31,12 @@ module CardDav
           description = desc.text if desc
         end
 
+        source = Array(context.authenticated_addressbooks).first
         context.user.addressbooks.create!(
           uri: uri,
           displayname: displayname,
-          description: description
+          description: description,
+          dav_password_digest: source&.dav_password_digest
         )
 
         empty_response(201)

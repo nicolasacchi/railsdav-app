@@ -5,7 +5,7 @@
 </section>
 
 <div class="legal-content">
-  <p class="last-updated">Last updated: March 15, 2026</p>
+  <p class="last-updated">Last updated: 8 September 2026</p>
 
   <p>By accessing or using Contacts (<%= Railsdav.site_url %>), you agree to these Terms of Service. If you do not agree, do not use the service.</p>
 
@@ -20,13 +20,11 @@
     <li>You must be at least 16 years old to use this service.</li>
   </ul>
 
-  <h2>3. Subscriptions &amp; Billing</h2>
+  <h2>3. Self-Hosted Service</h2>
   <ul>
-    <li>CardDAV sync requires an active subscription.</li>
-    <li>Payments are processed by <a href="https://stripe.com" target="_blank" rel="noopener">Stripe</a>. By subscribing, you also agree to <a href="https://stripe.com/legal/consumer" target="_blank" rel="noopener">Stripe's terms</a>.</li>
-    <li>Subscriptions renew automatically until cancelled.</li>
-    <li>You can cancel at any time through the Subscription page. Access continues until the end of the billing period.</li>
-    <li>No refunds are provided for partial billing periods.</li>
+    <li>This software is provided as a self-hosted, open-source application. There is no paid subscription and no payment processor.</li>
+    <li>You run and operate your own instance. There is no Subscription page, no billing cycle, and no fees charged by the project.</li>
+    <li>CardDAV sync is available on the instance you host; access is not gated on a paid plan.</li>
   </ul>
 
   <h2>4. Acceptable Use</h2>
@@ -59,7 +57,7 @@
     <li>Any unauthorized access to your account or data.</li>
     <li>Any other matter relating to the service.</li>
   </ul>
-  <p><strong>Our total aggregate liability for any claims arising from or related to the service shall not exceed the amount you have paid us in the 12 months preceding the claim.</strong></p>
+  <p><strong>Because the software is provided free of charge for self-hosting, our total aggregate liability for any claims arising from or related to the service is limited to the greatest extent permitted by applicable law.</strong></p>
 
   <h2>8. Modifications</h2>
   <p>We reserve the right to modify or discontinue the service at any time, with or without notice. We may also update these Terms at any time. Continued use of the service after changes constitutes acceptance of the new Terms.</p>
@@ -71,5 +69,5 @@
   <p>These Terms are governed by the laws of Italy. Any disputes shall be resolved in the courts of Italy.</p>
 
   <h2>11. Contact</h2>
-  <p>For questions about these Terms, contact us at <strong>support@scc.im</strong>.</p>
+  <p>For questions about these Terms, contact us at <strong><%= Railsdav.mailer_from %></strong>.</p>
 </div>

@@ -47,6 +47,9 @@ module CardDav
       end
 
       def delete_addressbook(context)
+        owner_error = require_owner!(context)
+        return owner_error if owner_error
+
         addressbook = find_addressbook(context)
         return not_found unless addressbook
 
